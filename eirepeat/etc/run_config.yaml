@@ -1,0 +1,69 @@
+#############################################
+# Input files to drive the pipeline
+#############################################
+
+# provide path to genome file
+# - make sure that the genome fasta file does not contain any masked bases (small case letters), ignore any N's (n's)
+# - It is recommended that all lines of text be shorter than 80 characters in length. RepeatModeler might hang without
+#   any reason if the fasta is not properly formatted
+# - the fasta file should not be zipped
+fasta: /path/to/unzipped/genome.fa
+
+# Run below command to identify the species options to provide
+# Also, check the NCBI taxonomy to identify the correct species option - https://www.ncbi.nlm.nih.gov/taxonomy
+# perl /tgac/software/testing/repeatmodeller/1.0.10/src/RepeatMasker/util/queryRepeatDatabase.pl -tree | les
+# For example:
+# species: Insecta -- for Bombus vestalis, the vestal cuckoo bumblebee
+species: None
+
+# Enable this option to generate RED repeats
+run_red_repeats: False
+
+# Close reference protein CDS fasta to mask the RepeatModeler fasta
+close_reference : /path/to/close_reference
+
+# organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta
+organellar_fasta: /path/to/organellar_fasta
+
+# output folder name, NOT path
+output: ./output
+#####
+# END of input parameters
+#####
+
+
+#######################
+# source required tools and provide parameters
+# NOTE: below tools are required for the snakemake pipeline
+#######################
+source:
+    repeatmodeler: "source repeatmodeler-1.0.11_CBG"
+    repeatmasker: "source repeatmodeler-1.0.11_CBG"
+    seqkit: "source seqkit-2.1.0_CBG"
+    red: "source red-22052015_CBG"
+    tpsi: "source transposonPSI-08222010"
+    blast: "source blast-2.6.0"
+    bedtools: "source bedtools-2.25.0"
+
+#####
+# END of source tools and parameters
+#####
+
+
+#############################################
+# Job and JIRA configurations
+#############################################
+chunks:
+  tpsi: 50
+params:
+  time: "/usr/bin/time -v "
+  du: "/usr/bin/time -v du -sch "
+jira_config:
+  jira:
+    site: "http://jira.earlham.ac.uk"
+    username: "tgacpap"
+    password_file: "/ei/cb/common/.jira_pwd"
+
+#############################################
+# END of Job and JIRA configurations
+#############################################

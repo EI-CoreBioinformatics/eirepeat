@@ -1,0 +1,4 @@
+jira:
+  site: "http://jira.earlham.ac.uk"
+  username: "tgacpap"
+  password_file: "/ei/cb/common/.jira_pwd"

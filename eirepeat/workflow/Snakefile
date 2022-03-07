@@ -1,0 +1,292 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+
+Snakemake for EI Repeat Identification Pipeline
+
+"""
+
+# authorship and License information
+__author__ = "Gemy George Kaithakottil"
+__maintainer__ = "Gemy George Kaithakottil"
+__email__ = "Gemy.Kaithakottil@gmail.com"
+
+# import modules
+import os
+import sys
+import logging
+import yaml
+import glob
+from eirepeat.scripts.jiracomms import post_to_jira, post_attachment_to_jira
+
+from eirepeat.scripts.hpc_config import HpcConfig
+HPC_CONFIG = HpcConfig(config["hpc_config"])
+
+# from pathlib import Path;,
+
+# Request min version of snakemake
+# https://snakemake.readthedocs.io/en/stable/snakefiles/writing_snakefiles.html#depend-on-a-minimum-snakemake-version
+from snakemake.utils import min_version
+min_version("7.0")
+
+# declare variables
+cwd = os.getcwd()
+ppbfx = config["ppbfx"] # command line
+notify = not config["notify"] # command line
+output = os.path.abspath(config["output"])
+index_dir = os.path.join(output,"index")
+index_name = "genome.fa"
+repeatmodeler_dir = os.path.join(output,"RepeatModeler")
+interspersed_repeatmodeler_dir = os.path.join(output,"RepeatMasker_interspersed_repeatmodeler")
+interspersed_dir = os.path.join(output,"RepeatMasker_interspersed")
+low_dir = os.path.join(output,"RepeatMasker_low")
+
+if config['verbose']:
+    print(f"output:{output}")
+    print(f"jira/ppbfx:{ppbfx}")
+    print(f"notify:{notify}")
+    print(f"jira:{config['jira_config']}")
+else:
+    print(f"output:{output}")
+
+#######################
+# FOLDERS
+#######################
+# create logs folder
+# need to find a proper fix for this as mentioned in the issue below, but for now using a quick fix
+# # https://bitbucket.org/snakemake/snakemake/issues/838/how-to-create-output-folders-for-slurm-log#comment-45348663
+logs_dir = os.path.join(os.getcwd(),"logs")
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
+
+# # ########### Helper methods ############
+def notify(message, attachment=None, jira_filename=None, suffix=None):
+    if notify:
+        if attachment:
+            if not post_attachment_to_jira(ppbfx, message, attachment, name=jira_filename, suffix=suffix, jira_config=config["jira_config"]):
+                print(f"Failed to POST attachment to JIRA ticket: {ppbfx}")
+        else:
+            if not post_to_jira(ppbfx, message, jira_config=config["jira_config"]):
+                print(f"Failed to POST to JIRA ticket: {ppbfx}; Message: {message}")
+
+#######################
+# RULES STARTS HERE
+#######################
+
+TARGET = [
+    # rule BuildDatabase
+    os.path.join(index_dir, "BuildDatabase.completed"),
+    # rule RepeatModeler
+    expand(os.path.join(index_dir,"{index_name}-families.{ext}"),index_name=index_name, ext=["fa","stk"]),
+    os.path.join(repeatmodeler_dir,"RepeatModeler.completed"),
+    # rule RepeatMasker_interspersed_repeatmodeler
+    os.path.join(interspersed_repeatmodeler_dir,"RepeatMasker_interspersed_repeatmodeler.completed"),
+    # rule RepeatMasker_interspersed
+    os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed"),
+    # rule RepeatMasker_low
+    os.path.join(low_dir,"RepeatMasker_low.completed"),
+    os.path.join(output, "eirepeat.completed.txt") # all stats from the run is posted using this txt file
+]
+
+if config['verbose']:
+    print("##########")
+    print(f"TARGET:{TARGET}")
+    print("##########")
+
+shell.prefix("set -eo pipefail; ")
+
+localrules:
+    copy_genome,
+    add_stats_to_jira
+
+rule all:
+    input:
+        TARGET
+
+#######################
+# WORKFLOW
+#######################
+
+rule copy_genome:
+    input:
+        fasta = config["fasta"]
+    output:
+        fasta = os.path.join(output, index_name),
+        done = os.path.join(output, "genome.fa.done")
+    log:
+        os.path.join(logs_dir, "copy_genome.log")
+    params:
+        cwd = output
+    shell:
+        "(set +u"
+        + " && cd {params.cwd}"
+        + " && cp -aL {input} {output.fasta}"
+        + " && chmod 777 {output.fasta}"
+        + " && touch {output.done}"
+        + ") > {log} 2>&1"
+
+
+rule BuildDatabase:
+    input:
+        rules.copy_genome.output.fasta
+    output:
+        os.path.join(index_dir, "BuildDatabase.completed")
+    log:
+        os.path.join(logs_dir, "BuildDatabase.log")
+    params:
+        cwd = index_dir,
+        name = os.path.basename(rules.copy_genome.output.fasta),
+        extra = "-engine ncbi",
+        time = config["params"]["time"],
+        source = config["source"]["repeatmodeler"]
+    threads:
+        HPC_CONFIG.get_cores("BuildDatabase")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd}"
+        + " && {params.source}"
+        + " && {params.time} BuildDatabase -name {params.name} {params.extra} {input}"
+        + " && touch {output}"
+        + ") > {log} 2>&1"
+
+
+rule RepeatModeler:
+    input:
+        rules.BuildDatabase.output
+    output:
+        files = expand(os.path.join(index_dir,"{index_name}-families.{ext}"),index_name=os.path.basename(rules.copy_genome.output.fasta), ext=["fa","stk"]),
+        completed = os.path.join(repeatmodeler_dir,"RepeatModeler.completed")
+    log:
+        os.path.join(logs_dir, "RepeatModeler.log")
+    params:
+        cwd = repeatmodeler_dir,
+        index = os.path.join(index_dir,os.path.basename(rules.copy_genome.output.fasta)),
+        extra = "-engine ncbi -srand 7",
+        time = config["params"]["time"],
+        source = config["source"]["repeatmodeler"]
+    threads:
+        HPC_CONFIG.get_cores("RepeatModeler")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd}"
+        + " && {params.source}"
+        + " && {params.time} RepeatModeler {params.extra} -p {threads} -database {params.index}"
+        + " && touch {output.completed}"
+        + ") > {log} 2>&1"
+
+# 1. Softmask the assembly with the Rmodeler library for the Interspersed repeats masking:
+
+# rule RepeatMasker_interspersed_repeatmodeler
+# ------------------
+rule RepeatMasker_interspersed_repeatmodeler:
+    input:
+        fasta = rules.copy_genome.output.fasta,
+        repeatmodeler_fasta = expand(os.path.join(index_dir,"{index_name}-families.fa"),index_name=os.path.basename(rules.copy_genome.output.fasta))
+    output:
+        os.path.join(interspersed_repeatmodeler_dir,"RepeatMasker_interspersed_repeatmodeler.completed")
+    log:
+        os.path.join(logs_dir,"RepeatMasker_interspersed_repeatmodeler.log")
+    params:
+        cwd = interspersed_repeatmodeler_dir,
+        extra = "-engine ncbi -a -xsmall -gff -nolow",
+        species = config["species"],
+        time = config["params"]["time"],
+        source = config["source"]["repeatmasker"]
+    threads:
+        HPC_CONFIG.get_cores("RepeatMasker_interspersed_repeatmodeler")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && {params.source} "
+        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.repeatmodeler_fasta} -dir {params.cwd} {input.fasta}"
+        + " && touch {output}"
+        + ") 2> {log}"
+
+
+# 2. Softmask the genome assembly with repeatmasker libraries for the Interspersed repeats masking:
+
+# rule RepeatMasker_interspersed
+# ------------------
+rule RepeatMasker_interspersed:
+    input:
+        fasta = rules.copy_genome.output.fasta
+    output:
+        os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed")
+    log:
+        os.path.join(logs_dir,"RepeatMasker_interspersed.log")
+    params:
+        cwd = interspersed_dir,
+        extra = "-engine ncbi -a -xsmall -gff -nolow",
+        species = config["species"],
+        time = config["params"]["time"],
+        source = config["source"]["repeatmasker"]
+    threads:
+        HPC_CONFIG.get_cores("RepeatMasker_interspersed")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && {params.source} "
+        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
+        + " && touch {output}"
+        + ") 2> {log}"
+
+# 3. Softmask the assembly with repeatmasker libraries for the lowcomplexity repeats masking
+
+# rule RepeatMasker_low
+# ------------------
+rule RepeatMasker_low:
+    input:
+        fasta = rules.copy_genome.output.fasta
+    output:
+        os.path.join(low_dir,"RepeatMasker_low.completed")
+    log:
+        os.path.join(low_dir,"RepeatMasker_low.log")
+    params:
+        cwd = low_dir,
+        extra = "-engine ncbi -a -xsmall -gff -noint",
+        species = config["species"],
+        time = config["params"]["time"],
+        source = config["source"]["repeatmasker"]
+    threads:
+        HPC_CONFIG.get_cores("RepeatMasker_low")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && {params.source} "
+        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
+        + " && touch {output}"
+        + ") 2> {log}"
+
+# TO DO : 4. Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
+
+
+rule add_stats_to_jira:
+    input:
+        rules.BuildDatabase.output,
+        rules.RepeatModeler.output.completed,
+        rules.RepeatMasker_interspersed_repeatmodeler.output,
+        rules.RepeatMasker_interspersed.output,
+        rules.RepeatMasker_low.output
+    output:
+        os.path.join(output, "eirepeat.completed.txt")
+    log:
+        os.path.join(logs_dir, ".add_stats_to_jira.log")
+    params:
+        time = config["params"]["time"],
+        du = config["params"]["du"],
+        cwd = output,
+        storage_details = os.path.join(output, "storage_details.txt")
+
+    run:
+        shell("echo -ne '\nOutput directory:\n{{code}}\n' > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details}&& echo -ne '{{code}}\n' >> {params.storage_details} ")
+
+        with open(params.storage_details, mode='r') as in_file1, \
+            open(output[0], "w") as out_file:
+            # out_file.write(f"h3. {params.title}")
+            out_file.write("\nh5. Storage details")
+            for line in in_file1:
+                out_file.write(f'{line}')
+            # out_file.write("\ndone")
+        # notify(f"Attaching CCS report for run {params.run_folder_name}", input[0], jira_filename=f"{params.run_folder_name}.ccs_report.txt")
+        notify(output[0])
