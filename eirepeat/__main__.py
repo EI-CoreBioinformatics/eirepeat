@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-PacBio PAP
+EI Repeat Identification Pipeline
 
-# Thursday, 12 December 2019, 03:22PM
 """
 
 # authorship and License information
@@ -25,7 +24,7 @@ from eirepeat.scripts.jiracomms import JiraInfo, post_to_jira
 from eirepeat import (
     DEFAULT_PAP_CONFIG_FILE,
     DEFAULT_PAP_RUN_CONFIG_FILE,
-    DEFAULT_HPC_CONFIG_FILE
+    DEFAULT_HPC_CONFIG_FILE,
 )
 
 from snakemake.utils import min_version
