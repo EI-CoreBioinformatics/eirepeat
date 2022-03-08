@@ -1,4 +1,4 @@
-#!/ei/software/cb/biopython/1.79_gk/x86_64/bin/python3
+#!/usr/bin/env python3
 
 # -*- coding: utf-8 -*-
 """

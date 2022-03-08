@@ -3,6 +3,8 @@
 from setuptools import setup, find_packages
 import glob
 
+requirements = [line.rstrip() for line in open("requirements.txt", "rt")]
+
 setup(
     name="eirepeat",
     version="0.0.0",
@@ -21,6 +23,7 @@ setup(
         "Programming Language :: Python :: 3.9",
     ],
     entry_points={"console_scripts": ["eirepeat = eirepeat.__main__:main"]},
+    install_requires=requirements,
     packages=find_packages(".", exclude=["tests"]),
     scripts=[script for script in glob.glob("eirepeat/scripts/*")],
     package_data={
