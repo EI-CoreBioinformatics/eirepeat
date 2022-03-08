@@ -90,9 +90,9 @@ class RepeatsPipeline:
         # https://www.programcreek.com/python/example/50/subprocess.Popen
         (result, error) = p.communicate()
         exit_code = p.returncode
+        print(f"\nRESULTS:\n{result}\n\nERRORS:\n{error}\n\nEXIT_CODE:\n{exit_code}\n")
         if exit_code:
             raise subprocess.CalledProcessError(exit_code, cmd)
-        print(f"\nRESULTS:\n{result}\n\nERRORS:\n{error}\n")
 
         if self.dry_run:
             print("Dry run completed successfully!\n")

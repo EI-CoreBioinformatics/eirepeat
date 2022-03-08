@@ -37,13 +37,13 @@ output: ./output
 # NOTE: below tools are required for the snakemake pipeline
 #######################
 source:
-    repeatmodeler: "source repeatmodeler-1.0.11_CBG"
-    repeatmasker: "source repeatmodeler-1.0.11_CBG"
-    seqkit: "source seqkit-2.1.0_CBG"
-    red: "source red-22052015_CBG"
-    tpsi: "source transposonPSI-08222010"
-    blast: "source blast-2.6.0"
-    bedtools: "source bedtools-2.25.0"
+  repeatmodeler: "source repeatmodeler-1.0.11_CBG"
+  repeatmasker: "source repeatmodeler-1.0.11_CBG"
+  seqkit: "source seqkit-2.1.0_CBG"
+  red: "source red-22052015_CBG"
+  tpsi: "source transposonPSI-08222010"
+  blast: "source blast-2.6.0"
+  bedtools: "source bedtools-2.25.0"
 
 #####
 # END of source tools and parameters

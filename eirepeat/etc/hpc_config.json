@@ -28,5 +28,10 @@
         "cores": 16,
         "memory": 25600,
         "partition": "ei-medium,ei-long"
+    },
+    "blast": {
+        "cores": 16,
+        "memory": 25600,
+        "partition": "ei-medium,ei-long"
     }
 }

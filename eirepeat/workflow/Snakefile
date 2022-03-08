@@ -40,6 +40,8 @@ repeatmodeler_dir = os.path.join(output,"RepeatModeler")
 interspersed_repeatmodeler_dir = os.path.join(output,"RepeatMasker_interspersed_repeatmodeler")
 interspersed_dir = os.path.join(output,"RepeatMasker_interspersed")
 low_dir = os.path.join(output,"RepeatMasker_low")
+blast_dir = os.path.join(output,"blast")
+
 
 if config['verbose']:
     print(f"output:{output}")
@@ -88,6 +90,11 @@ TARGET = [
     os.path.join(low_dir,"RepeatMasker_low.completed"),
     os.path.join(output, "eirepeat.completed.txt") # all stats from the run is posted using this txt file
 ]
+
+if config["organellar_fasta"]:
+    TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta"))
+    TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"))
+    TARGET.append(os.path.join(blast_dir, "blast.completed"))
 
 if config['verbose']:
     print("##########")
@@ -177,8 +184,6 @@ rule RepeatModeler:
 
 # 1. Softmask the assembly with the Rmodeler library for the Interspersed repeats masking:
 
-# rule RepeatMasker_interspersed_repeatmodeler
-# ------------------
 rule RepeatMasker_interspersed_repeatmodeler:
     input:
         fasta = rules.copy_genome.output.fasta,
@@ -206,8 +211,6 @@ rule RepeatMasker_interspersed_repeatmodeler:
 
 # 2. Softmask the genome assembly with repeatmasker libraries for the Interspersed repeats masking:
 
-# rule RepeatMasker_interspersed
-# ------------------
 rule RepeatMasker_interspersed:
     input:
         fasta = rules.copy_genome.output.fasta
@@ -233,8 +236,6 @@ rule RepeatMasker_interspersed:
 
 # 3. Softmask the assembly with repeatmasker libraries for the lowcomplexity repeats masking
 
-# rule RepeatMasker_low
-# ------------------
 rule RepeatMasker_low:
     input:
         fasta = rules.copy_genome.output.fasta
@@ -256,6 +257,42 @@ rule RepeatMasker_low:
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
         + " && touch {output}"
+        + ") 2> {log}"
+
+# Filter 'Unknown|Other' from RepeatModeler repeats
+rule blast:
+    input:
+        # get the RepeatModeler fasta file
+        repeatmodeler_fasta = rules.RepeatModeler.output.files[0],
+        organellar_fasta = config["organellar_fasta"]
+    output:
+        fasta = os.path.join(blast_dir, index_name + ".unknown.fasta"),
+        blast = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"),
+        completed = os.path.join(blast_dir, "blast.completed")
+    log:
+        os.path.join(logs_dir,"blast.log")
+    params:
+        cwd = blast_dir,
+        unknown = "'Unknown|Other'",
+        time = config["params"]["time"],
+        basename_repeatmodeler_fasta = os.path.basename(rules.RepeatModeler.output.files[0]),
+        basename_organellar_fasta = os.path.basename(config["organellar_fasta"]),
+        source_blast = config["source"]["blast"],
+        extra = "\'6 qseqid sseqid pident qstart qend sstart send qlen slen length nident mismatch positive gapopen gaps evalue bitscore\'",
+        source_seqkit = config["source"]["seqkit"]
+    threads:
+        HPC_CONFIG.get_cores("blast")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && ln -s {input.repeatmodeler_fasta} "
+        + " && {params.source_seqkit} "
+        + " && {params.time} seqkit grep -r -p {params.unknown} {params.basename_repeatmodeler_fasta} -o {output.fasta}"
+        + " && {params.source_blast} "
+        + " && ln -s {input.organellar_fasta} "
+        + " && {params.time} makeblastdb -dbtype nucl -in {params.basename_organellar_fasta} -input_type fasta"
+        + " && {params.time} blastn -task blastn -query {output.fasta} -db {params.basename_organellar_fasta} -evalue 1e-5 -num_threads {threads} -outfmt {params.extra} -out {output.blast}"
+        + " && touch {output.completed}"
         + ") 2> {log}"
 
 # TO DO : 4. Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
