@@ -71,7 +71,7 @@ class RepeatsPipeline:
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
                 f" --config ppbfx={self.jira} notify={self.no_posting} verbose={self.verbose}"
-                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}}' -np "
+                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}}' -np --reason "
             )
             print(cmd)
 
