@@ -94,6 +94,8 @@ TARGET = [
 if config["organellar_fasta"]:
     TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta"))
     TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"))
+    TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr.bed"))
+    TARGET.append(os.path.join(blast_dir, index_name + ".organellarGenome.HM.fa"))
     TARGET.append(os.path.join(blast_dir, "blast.completed"))
 
 if config['verbose']:
@@ -268,6 +270,8 @@ rule blast:
     output:
         fasta = os.path.join(blast_dir, index_name + ".unknown.fasta"),
         blast = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"),
+        blast_bed = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr.bed"),
+        hmask_rm = os.path.join(blast_dir, index_name + ".organellarGenome.HM.fa"),
         completed = os.path.join(blast_dir, "blast.completed")
     log:
         os.path.join(logs_dir,"blast.log")
@@ -279,7 +283,8 @@ rule blast:
         basename_organellar_fasta = os.path.basename(config["organellar_fasta"]),
         source_blast = config["source"]["blast"],
         extra = "\'6 qseqid sseqid pident qstart qend sstart send qlen slen length nident mismatch positive gapopen gaps evalue bitscore\'",
-        source_seqkit = config["source"]["seqkit"]
+        source_seqkit = config["source"]["seqkit"],
+        source_bedtools = config["source"]["bedtools"]
     threads:
         HPC_CONFIG.get_cores("blast")
     shell:
@@ -292,10 +297,22 @@ rule blast:
         + " && ln -s {input.organellar_fasta} "
         + " && {params.time} makeblastdb -dbtype nucl -in {params.basename_organellar_fasta} -input_type fasta"
         + " && {params.time} blastn -task blastn -query {output.fasta} -db {params.basename_organellar_fasta} -evalue 1e-5 -num_threads {threads} -outfmt {params.extra} -out {output.blast}"
+        + """ && {params.time} cat {output.blast} | {params.time} awk -F '\\t' '{{print $1\"\\t\"$4-1\"\\t\"$5}}' | sort -u > {output.blast_bed}"""
+        + " && {params.source_bedtools} "
+        + " && {params.time} maskFastaFromBed -fi {params.basename_repeatmodeler_fasta} -bed {output.blast_bed} -fo {output.hmask_rm} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
+#  'source bedtools-2.25.0 && maskFastaFromBed -fi genome_db-families.fa -fo genome_db-families.organellarGenome.HM.fa -bed genome_db-families.fa.unknown.fasta-vs-eudicotyledons.genetic_compartments.849434.07Dec2021.Entrez.sequence.fasta.blastn.tblr.bed'
+# Monday, 07 March 2022, 07:55PM (kaithakg)
+
+
 # TO DO : 4. Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
+
+# add stats
+# - bases of RepeatModeler repeats masked by organellar repeats
+# - based of close reference CDS masked by tPSI
+
 
 
 rule add_stats_to_jira:
@@ -316,7 +333,7 @@ rule add_stats_to_jira:
         storage_details = os.path.join(output, "storage_details.txt")
 
     run:
-        shell("echo -ne '\nOutput directory:\n{{code}}\n' > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details}&& echo -ne '{{code}}\n' >> {params.storage_details} ")
+        shell("""echo -ne \"\\nOutput directory:\\n{{code}}\\n\" > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details}&& echo -ne \"{{code}}\\n\" >> {params.storage_details}""")
 
         with open(params.storage_details, mode='r') as in_file1, \
             open(output[0], "w") as out_file:
