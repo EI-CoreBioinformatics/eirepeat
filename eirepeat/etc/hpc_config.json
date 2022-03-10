@@ -4,24 +4,14 @@
         "J": "eirepeat.{rule}",
         "partition": "ei-medium,ei-long"
     },
+    "red": {
+        "cores": 1,
+        "memory": 10240,
+        "partition": "ei-medium,ei-long"
+    },
     "BuildDatabase": {
         "cores": 1,
         "memory": 5120,
-        "partition": "ei-medium,ei-long"
-    },
-    "RepeatModeler": {
-        "cores": 16,
-        "memory": 40960,
-        "partition": "ei-medium,ei-long"
-    },
-    "RepeatMasker_interspersed_repeatmodeler": {
-        "cores": 16,
-        "memory": 40960,
-        "partition": "ei-medium,ei-long"
-    },
-    "RepeatMasker_interspersed": {
-        "cores": 16,
-        "memory": 40960,
         "partition": "ei-medium,ei-long"
     },
     "RepeatMasker_low": {
@@ -29,9 +19,34 @@
         "memory": 25600,
         "partition": "ei-medium,ei-long"
     },
+    "RepeatMasker_interspersed": {
+        "cores": 16,
+        "memory": 40960,
+        "partition": "ei-medium,ei-long"
+    },
+    "RepeatModeler": {
+        "cores": 16,
+        "memory": 40960,
+        "partition": "ei-medium,ei-long"
+    },
     "blast": {
         "cores": 16,
         "memory": 25600,
+        "partition": "ei-medium,ei-long"
+    },
+    "transposonpsi": {
+        "cores": 1,
+        "memory": 4096,
+        "partition": "ei-medium,ei-long"
+    },
+    "RepeatMasker_RepeatModeler": {
+        "cores": 16,
+        "memory": 20480,
+        "partition": "ei-medium,ei-long"
+    },
+    "RepeatMasker_interspersed_repeatmodeler": {
+        "cores": 16,
+        "memory": 40960,
         "partition": "ei-medium,ei-long"
     }
 }
