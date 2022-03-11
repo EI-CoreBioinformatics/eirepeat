@@ -17,15 +17,13 @@ import sys
 import logging
 import yaml
 import glob
+from pathlib import Path
 from eirepeat.scripts.jiracomms import post_to_jira, post_attachment_to_jira
 
 from eirepeat.scripts.hpc_config import HpcConfig
 HPC_CONFIG = HpcConfig(config["hpc_config"])
 
-# from pathlib import Path;,
-
 # Request min version of snakemake
-# https://snakemake.readthedocs.io/en/stable/snakefiles/writing_snakefiles.html#depend-on-a-minimum-snakemake-version
 from snakemake.utils import min_version
 min_version("7.0")
 
@@ -35,29 +33,47 @@ ppbfx = config["ppbfx"] # command line
 notify = not config["notify"] # command line
 output = os.path.abspath(config["output"])
 index_dir = os.path.join(output,"index")
-index_name = "genome.fa"
+index_name = "genome.fa" # DO NOT CHANGE THIS - IF WE DO THEN THE RED REPEATS AND THE REST OF THE PIPELINE NEEDS CAREFUL REVIEW
+close_reference_name = "close_reference.cds.fa" # DO NOT CHANGE THIS
+organellar_name = "organellar.fa" # DO NOT CHANGE THIS
 repeatmodeler_dir = os.path.join(output,"RepeatModeler")
 interspersed_repeatmodeler_dir = os.path.join(output,"RepeatMasker_interspersed_repeatmodeler")
 interspersed_dir = os.path.join(output,"RepeatMasker_interspersed")
 low_dir = os.path.join(output,"RepeatMasker_low")
 blast_dir = os.path.join(output,"blast")
+transposonpsi_dir = os.path.join(output,"transposonpsi")
+repeatmodeler_hmask_dir = os.path.join(output,"RepeatMasker_RepeatModeler")
+# interspersed_HM_repeatmodeler_dir = os.path.join(output,"RepeatMasker_interspersed_HM_repeatmodeler")
+red_dir = os.path.join(output,"red")
 
+
+# DEFINE RUNS
+# run1 - RepeatModeler : Raw
+run1 = False if (config["organellar_fasta"] and config["close_reference"]) else True
+# run2 - RepeatModeler : Organellar
+run2 = True if (config["organellar_fasta"] and not config["close_reference"])  else False
+# run3 - RepeatModeler : Close Reference
+run3 = True if (config["close_reference"] and not config["organellar_fasta"])  else False
+# run4 - RepeatModeler : Organellar + Close Reference
+run4 = True if (config["organellar_fasta"] and config["close_reference"])  else False
 
 if config['verbose']:
+    print("Defined runs:")
+    print(f"run1:{run1}")
+    print(f"run2:{run2}")
+    print(f"run3:{run3}")
+    print(f"run4:{run4}")
     print(f"output:{output}")
     print(f"jira/ppbfx:{ppbfx}")
     print(f"notify:{notify}")
     print(f"jira:{config['jira_config']}")
-else:
-    print(f"output:{output}")
+
 
 #######################
 # FOLDERS
 #######################
 # create logs folder
-# need to find a proper fix for this as mentioned in the issue below, but for now using a quick fix
-# # https://bitbucket.org/snakemake/snakemake/issues/838/how-to-create-output-folders-for-slurm-log#comment-45348663
-logs_dir = os.path.join(os.getcwd(),"logs")
+logs_dir = os.path.join(cwd,"logs")
 if not os.path.exists(logs_dir):
     os.makedirs(logs_dir)
 
@@ -77,26 +93,114 @@ def notify(message, attachment=None, jira_filename=None, suffix=None):
 #######################
 
 TARGET = [
+    # clean_genome
+    os.path.join(output, index_name),
+    os.path.join(output, index_name + ".done"),
+
     # rule BuildDatabase
     os.path.join(index_dir, "BuildDatabase.completed"),
+
     # rule RepeatModeler
     expand(os.path.join(index_dir,"{index_name}-families.{ext}"),index_name=index_name, ext=["fa","stk"]),
     os.path.join(repeatmodeler_dir,"RepeatModeler.completed"),
-    # rule RepeatMasker_interspersed_repeatmodeler
-    os.path.join(interspersed_repeatmodeler_dir,"RepeatMasker_interspersed_repeatmodeler.completed"),
-    # rule RepeatMasker_interspersed
-    os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed"),
+
     # rule RepeatMasker_low
+    os.path.join(low_dir, index_name + ".out.gff"),
     os.path.join(low_dir,"RepeatMasker_low.completed"),
+
+    # rule RepeatMasker_interspersed
+    os.path.join(interspersed_dir, index_name + ".out.gff"),
+    os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed"),
+
+    # all_repeats
+    os.path.join(output, "all_repeats." + index_name + ".out.gff"),
+    os.path.join(output, "all_repeats.completed"),
+
+    # all_interspersed_repeats
+    os.path.join(output, "all_interspersed_repeats." + index_name + ".out.gff"),
+    os.path.join(output, "all_interspersed_repeats.completed"),
+
+    # RED repeats
+    os.path.join(red_dir, "output_red_rpt", "genome.rpt"),
+    os.path.join(red_dir, "genome.rpt.bed"),
+    os.path.join(red_dir, "genome.rpt.gff"),
+    os.path.join(red_dir, "red.completed"),
+
     os.path.join(output, "eirepeat.completed.txt") # all stats from the run is posted using this txt file
 ]
 
+# DEFINE MAIN RUNS TO EXECUTE
+# run1 - RepeatModeler : Raw
+if run1 or (not (config["organellar_fasta"] and config["close_reference"])):
+    # rule RepeatMasker_interspersed_repeatmodeler
+    TARGET.append(os.path.join(interspersed_repeatmodeler_dir, index_name + ".out.gff"))
+    TARGET.append( os.path.join(interspersed_repeatmodeler_dir,"RepeatMasker_interspersed_repeatmodeler.completed"))
+
+# run2 - RepeatModeler : Organellar
 if config["organellar_fasta"]:
+
+    TARGET.append(os.path.join(output, organellar_name))
+    TARGET.append(os.path.join(output, organellar_name + ".done"))
+
     TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta"))
     TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"))
     TARGET.append(os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr.bed"))
     TARGET.append(os.path.join(blast_dir, index_name + ".organellarGenome.HM.fa"))
     TARGET.append(os.path.join(blast_dir, "blast.completed"))
+
+# run3 - RepeatModeler : Close Reference
+if config["close_reference"]:
+    count = 0
+    with open(config["close_reference"], 'r') as fh:
+        for line in fh:
+            if line.startswith(">"):
+                count += 1
+            else:
+                continue
+
+    total_chunks = count / config["chunks"]["transposonpsi"]
+    # check if there is remainder, then add one more to total chunks
+    total_chunks = int(total_chunks) + 1 if (count % config["chunks"]["transposonpsi"] != 0) else 0
+    chunk_numbers = list(range(1,total_chunks+1))
+    if config['verbose']:
+        print("Total number of --close_reference fasta sequences:{1} [{0}]".format(config["close_reference"],count))
+        print("Total number of chunks:{0} [{1} per chunk]".format(total_chunks,config["chunks"]["transposonpsi"]))
+        # print("Total chunk numbers:{}".format(chunk_numbers))
+
+    # Append TARGET
+    TARGET.append(expand(os.path.join("{output}", "chunks", "chunk-{sample}.txt"), output=transposonpsi_dir, sample=chunk_numbers))
+    TARGET.append(os.path.join(transposonpsi_dir, "chunks", "chunk_close_reference.completed"))
+
+    # TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.{ext}"), output=transposonpsi_dir, sample=chunk_numbers, ext=["allHits", "allHits.chains", "allHits.chains.gff3", "allHits.bestPerLocus", "allHits.bestPerLocus.gff3", "completed"]))
+
+    TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits"), output=transposonpsi_dir, sample=chunk_numbers))
+    # - from here
+    # adding below causes snakemake to delete the files we require
+    # TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.chains"), output=transposonpsi_dir, sample=chunk_numbers))
+    # TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.chains.gff3"), output=transposonpsi_dir, sample=chunk_numbers))
+    # TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.bestPerLocus"), output=transposonpsi_dir, sample=chunk_numbers))
+    # TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.bestPerLocus.gff3"), output=transposonpsi_dir, sample=chunk_numbers))
+    # - till here
+    TARGET.append(expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.completed"), output=transposonpsi_dir, sample=chunk_numbers))
+
+    # clean_close_reference
+    TARGET.append(os.path.join(output, close_reference_name))
+    TARGET.append(os.path.join(output, close_reference_name + ".done"))
+
+    TARGET.append(os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.allHits"))
+    TARGET.append(os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.allHits.bed"))
+    TARGET.append(os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.HMask.fasta"))
+    TARGET.append(os.path.join(transposonpsi_dir, "mask_close_reference.completed"))
+
+# run3 - RepeatModeler : Close Reference
+# run4 - RepeatModeler : Organellar + Close Reference
+if run3 or run4:
+    TARGET.append(os.path.join(repeatmodeler_hmask_dir, index_name + ".HM.fa.masked"))
+    TARGET.append(os.path.join(repeatmodeler_hmask_dir,"RepeatMasker_RepeatModeler.completed"))
+
+    # # rule RepeatMasker_interspersed_HM_repeatmodeler
+    # os.path.join(interspersed_HM_repeatmodeler_dir, index_name + ".out.gff"),
+    # os.path.join(interspersed_HM_repeatmodeler_dir,"RepeatMasker_interspersed_HM_repeatmodeler.completed"),
 
 if config['verbose']:
     print("##########")
@@ -106,7 +210,10 @@ if config['verbose']:
 shell.prefix("set -eo pipefail; ")
 
 localrules:
-    copy_genome,
+    chunk_close_reference,
+    mask_close_reference,
+    all_repeats,
+    all_interspersed_repeats,
     add_stats_to_jira
 
 rule all:
@@ -117,35 +224,71 @@ rule all:
 # WORKFLOW
 #######################
 
-rule copy_genome:
+rule clean_genome:
     input:
         fasta = config["fasta"]
     output:
         fasta = os.path.join(output, index_name),
-        done = os.path.join(output, "genome.fa.done")
+        done = os.path.join(output, index_name + ".done")
     log:
-        os.path.join(logs_dir, "copy_genome.log")
+        os.path.join(logs_dir, "clean_genome.log")
     params:
-        cwd = output
+        cwd = output,
+        time = config["params"]["time"],
+        source = config["source"]["seqkit"],
+        extra = "-w 60 -u"
+    threads:
+            HPC_CONFIG.get_cores("clean_genome")
     shell:
         "(set +u"
         + " && cd {params.cwd}"
-        + " && cp -aL {input} {output.fasta}"
+        + " && {params.source} "
+        + " && {params.time} seqkit seq {params.extra} -j {threads} {input} -o {output.fasta}"
         + " && chmod 777 {output.fasta}"
         + " && touch {output.done}"
         + ") > {log} 2>&1"
 
+rule red:
+    input:
+        fasta = rules.clean_genome.output.fasta
+    output:
+        msk = os.path.join(red_dir, "output_red_rpt", "genome.rpt"),
+        bed = os.path.join(red_dir, "genome.rpt.bed"),
+        gff = os.path.join(red_dir, "genome.rpt.gff"),
+        completed = os.path.join(red_dir, "red.completed")
+    log:
+        os.path.join(logs_dir,"red.log")
+    params:
+        cwd = red_dir,
+        time = config["params"]["time"],
+        index_name = index_name,
+        source = config["source"]["red"]
+    threads:
+        HPC_CONFIG.get_cores("red")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && ln -sf {input.fasta} "
+        + " && mkdir -p genome_directory output_red_sco output_red_cnd output_red_rpt output_red_msk"
+        + " && cd genome_directory "
+        + " && ln -sf {input.fasta} "
+        + " && cd .. "
+        + " && {params.source} "
+        + " && {params.time} Red -gnm genome_directory -sco output_red_sco -cnd output_red_cnd -rpt output_red_rpt -msk output_red_msk -hmo output_red_hmo"
+        + " && {params.time} red_rpt_to_GFF3.py output_red_rpt/genome.rpt"
+        + " && touch {output.completed}"
+        + ") 2> {log}"
 
 rule BuildDatabase:
     input:
-        rules.copy_genome.output.fasta
+        rules.clean_genome.output.fasta
     output:
         os.path.join(index_dir, "BuildDatabase.completed")
     log:
         os.path.join(logs_dir, "BuildDatabase.log")
     params:
         cwd = index_dir,
-        name = os.path.basename(rules.copy_genome.output.fasta),
+        name = Path(rules.clean_genome.output.fasta).name,
         extra = "-engine ncbi",
         time = config["params"]["time"],
         source = config["source"]["repeatmodeler"]
@@ -159,65 +302,40 @@ rule BuildDatabase:
         + " && touch {output}"
         + ") > {log} 2>&1"
 
+# 1. Softmask the assembly with repeatmasker libraries for the lowcomplexity repeats masking
 
-rule RepeatModeler:
+rule RepeatMasker_low:
     input:
-        rules.BuildDatabase.output
+        fasta = rules.clean_genome.output.fasta
     output:
-        files = expand(os.path.join(index_dir,"{index_name}-families.{ext}"),index_name=os.path.basename(rules.copy_genome.output.fasta), ext=["fa","stk"]),
-        completed = os.path.join(repeatmodeler_dir,"RepeatModeler.completed")
+        gff = os.path.join(low_dir, index_name + ".out.gff"),
+        completed = os.path.join(low_dir,"RepeatMasker_low.completed")
     log:
-        os.path.join(logs_dir, "RepeatModeler.log")
+        os.path.join(low_dir,"RepeatMasker_low.log")
     params:
-        cwd = repeatmodeler_dir,
-        index = os.path.join(index_dir,os.path.basename(rules.copy_genome.output.fasta)),
-        extra = "-engine ncbi -srand 7",
-        time = config["params"]["time"],
-        source = config["source"]["repeatmodeler"]
-    threads:
-        HPC_CONFIG.get_cores("RepeatModeler")
-    shell:
-        "(set +u"
-        + " && cd {params.cwd}"
-        + " && {params.source}"
-        + " && {params.time} RepeatModeler {params.extra} -p {threads} -database {params.index}"
-        + " && touch {output.completed}"
-        + ") > {log} 2>&1"
-
-# 1. Softmask the assembly with the Rmodeler library for the Interspersed repeats masking:
-
-rule RepeatMasker_interspersed_repeatmodeler:
-    input:
-        fasta = rules.copy_genome.output.fasta,
-        repeatmodeler_fasta = expand(os.path.join(index_dir,"{index_name}-families.fa"),index_name=os.path.basename(rules.copy_genome.output.fasta))
-    output:
-        os.path.join(interspersed_repeatmodeler_dir,"RepeatMasker_interspersed_repeatmodeler.completed")
-    log:
-        os.path.join(logs_dir,"RepeatMasker_interspersed_repeatmodeler.log")
-    params:
-        cwd = interspersed_repeatmodeler_dir,
-        extra = "-engine ncbi -a -xsmall -gff -nolow",
+        cwd = low_dir,
+        extra = "-engine ncbi -a -xsmall -gff -noint",
         species = config["species"],
         time = config["params"]["time"],
         source = config["source"]["repeatmasker"]
     threads:
-        HPC_CONFIG.get_cores("RepeatMasker_interspersed_repeatmodeler")
+        HPC_CONFIG.get_cores("RepeatMasker_low")
     shell:
         "(set +u"
         + " && cd {params.cwd} "
         + " && {params.source} "
-        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.repeatmodeler_fasta} -dir {params.cwd} {input.fasta}"
-        + " && touch {output}"
+        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
+        + " && touch {output.completed}"
         + ") 2> {log}"
 
-
-# 2. Softmask the genome assembly with repeatmasker libraries for the Interspersed repeats masking:
+# 2. Softmask the genome assembly with repeatmasker libraries (repbase) for the Interspersed repeats masking:
 
 rule RepeatMasker_interspersed:
     input:
-        fasta = rules.copy_genome.output.fasta
+        fasta = rules.clean_genome.output.fasta
     output:
-        os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed")
+        gff = os.path.join(interspersed_dir, index_name + ".out.gff"),
+        completed = os.path.join(interspersed_dir, "RepeatMasker_interspersed.completed")
     log:
         os.path.join(logs_dir,"RepeatMasker_interspersed.log")
     params:
@@ -236,92 +354,358 @@ rule RepeatMasker_interspersed:
         + " && touch {output}"
         + ") 2> {log}"
 
-# 3. Softmask the assembly with repeatmasker libraries for the lowcomplexity repeats masking
 
-rule RepeatMasker_low:
+rule RepeatModeler:
     input:
-        fasta = rules.copy_genome.output.fasta
+        rules.BuildDatabase.output
     output:
-        os.path.join(low_dir,"RepeatMasker_low.completed")
+        files = expand(os.path.join(index_dir,"{index_name}-families.{ext}"),index_name = Path(rules.clean_genome.output.fasta).name, ext=["fa","stk"]),
+        completed = os.path.join(repeatmodeler_dir,"RepeatModeler.completed")
     log:
-        os.path.join(low_dir,"RepeatMasker_low.log")
+        os.path.join(logs_dir, "RepeatModeler.log")
     params:
-        cwd = low_dir,
-        extra = "-engine ncbi -a -xsmall -gff -noint",
-        species = config["species"],
+        cwd = repeatmodeler_dir,
+        index = os.path.join(index_dir, Path(rules.clean_genome.output.fasta).name),
+        extra = "-engine ncbi -srand 7",
+        time = config["params"]["time"],
+        source = config["source"]["repeatmodeler"]
+    threads:
+        HPC_CONFIG.get_cores("RepeatModeler")
+    shell:
+        "(set +u"
+        + " && cd {params.cwd}"
+        + " && {params.source}"
+        + " && {params.time} RepeatModeler {params.extra} -p {threads} -database {params.index}"
+        + " && touch {output.completed}"
+        + ") > {log} 2>&1"
+
+
+
+if config["organellar_fasta"]:
+
+    rule clean_organellar_fasta:
+        input:
+            fasta = config["organellar_fasta"]
+        output:
+            fasta = os.path.join(output, organellar_name),
+            done = os.path.join(output, organellar_name + ".done")
+        log:
+            os.path.join(logs_dir, "clean_organellar_fasta.log")
+        params:
+            cwd = output,
+            time = config["params"]["time"],
+            source = config["source"]["seqkit"],
+            extra = "-w 60 -u"
+        threads:
+                HPC_CONFIG.get_cores("clean_organellar_fasta")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd}"
+            + " && {params.source} "
+            + " && {params.time} seqkit seq {params.extra} -j {threads} {input} -o {output.fasta}"
+            + " && chmod 777 {output.fasta}"
+            + " && touch {output.done}"
+            + ") > {log} 2>&1"
+
+    # Filter 'Unknown|Other' from RepeatModeler repeats
+    rule blast:
+        input:
+            # get the RepeatModeler fasta file
+            repeatmodeler_fasta = rules.RepeatModeler.output.files[0],
+            organellar_fasta = rules.clean_organellar_fasta.output.fasta
+        output:
+            fasta = os.path.join(blast_dir, index_name + ".unknown.fasta"),
+            blast = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"),
+            blast_bed = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr.bed"),
+            rmodeler_orgn_hmask = os.path.join(blast_dir, index_name + ".organellarGenome.HM.fa"),
+            completed = os.path.join(blast_dir, "blast.completed")
+        log:
+            os.path.join(logs_dir,"blast.log")
+        params:
+            cwd = blast_dir,
+            time = config["params"]["time"],
+            unknown = "'Unknown|Other'",
+            basename_repeatmodeler_fasta = Path(rules.RepeatModeler.output.files[0]).name,
+            basename_organellar_fasta = organellar_name,
+            source_blast = config["source"]["blast"],
+            extra = "\'6 qseqid sseqid pident qstart qend sstart send qlen slen length nident mismatch positive gapopen gaps evalue bitscore\'",
+            source_seqkit = config["source"]["seqkit"],
+            source_bedtools = config["source"]["bedtools"]
+        threads:
+            HPC_CONFIG.get_cores("blast")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd} "
+            + " && ln -sf {input.repeatmodeler_fasta} "
+            + " && {params.source_seqkit} "
+            + " && {params.time} seqkit grep -r -p {params.unknown} {params.basename_repeatmodeler_fasta} -o {output.fasta}"
+            + " && {params.source_blast} "
+            + " && ln -sf {input.organellar_fasta} "
+            + " && {params.time} makeblastdb -dbtype nucl -in {params.basename_organellar_fasta} -input_type fasta"
+            + " && {params.time} blastn -task blastn -query {output.fasta} -db {params.basename_organellar_fasta} -evalue 1e-5 -num_threads {threads} -outfmt {params.extra} -out {output.blast}"
+            + """ && {params.time} cat {output.blast} | {params.time} awk -F '\\t' '{{print $1\"\\t\"$4-1\"\\t\"$5}}' | sort -u > {output.blast_bed}"""
+            + " && {params.source_bedtools} "
+            + " && {params.time} maskFastaFromBed -fi {params.basename_repeatmodeler_fasta} -bed {output.blast_bed} -fo {output.rmodeler_orgn_hmask} "
+            + " && touch {output.completed}"
+            + ") 2> {log}"
+
+
+if config["close_reference"]:
+
+    rule clean_close_reference:
+        input:
+            fasta = config["close_reference"]
+        output:
+            fasta = os.path.join(output, close_reference_name),
+            done = os.path.join(output, close_reference_name + ".done")
+        log:
+            os.path.join(logs_dir, "clean_close_reference.log")
+        params:
+            cwd = output,
+            time = config["params"]["time"],
+            source = config["source"]["seqkit"],
+            extra = "-w 60 -u"
+        threads:
+                HPC_CONFIG.get_cores("clean_close_reference")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd}"
+            + " && {params.source} "
+            + " && {params.time} seqkit seq {params.extra} -j {threads} {input} -o {output.fasta}"
+            + " && chmod 777 {output.fasta}"
+            + " && touch {output.done}"
+            + ") > {log} 2>&1"
+
+    rule chunk_close_reference:
+        input:
+            fasta = rules.clean_close_reference.output.fasta
+        output:
+            expand(os.path.join("{output}", "chunks", "chunk-{sample}.txt"), output=transposonpsi_dir, sample=chunk_numbers),
+            completed = os.path.join(transposonpsi_dir, "chunks", "chunk_close_reference.completed")
+        log:
+            os.path.join(logs_dir,"chunk_close_reference.log")
+        params:
+            cwd = os.path.join(transposonpsi_dir, "chunks"),
+            transposonpsi_dir = transposonpsi_dir,
+            time = config["params"]["time"],
+            basename = close_reference_name,
+            prefix = "chunk",
+            chunksize = config["chunks"]["transposonpsi"]
+        shell:
+            "(set +u"
+            + " && cd {params.transposonpsi_dir} "
+            + " && ln -sf {input.fasta} "
+            + " && cd {params.cwd} "
+            + " && ln -sf {input.fasta} "
+            # awk script by Pierre Lindenbaum https://www.biostars.org/p/13270/
+            + " && {params.time} awk 'BEGIN {{n=0;m=1;}} /^>/ {{ if (n%{params.chunksize}==0) {{f=sprintf(\"{params.cwd}/chunk-%d.txt\",m); m++;}}; n++; }} {{ print >> f }}' {params.basename}"
+            + " && touch {output.completed}"
+            + ") 2> {log}"
+
+    rule transposonpsi:
+        input:
+            os.path.join(transposonpsi_dir, "chunks", "chunk-{sample}.txt")
+        output:
+            allHits = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits"),
+            # - from here
+            # adding below causes snakemake to delete the files we require
+            # chains = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.chains"),
+            # chains_gff3 = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.chains.gff3"),
+            # bestPerLocus = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.bestPerLocus"),
+            # bestPerLocus_gff3 = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits.bestPerLocus.gff3"),
+            # - till here
+            completed = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.completed")
+        log:
+            os.path.join(logs_dir, "transposonpsi", "chunk-{sample}.log")
+        params:
+            cwd = os.path.join(transposonpsi_dir, "output_chunks", "chunk-{sample}"),
+            time = config["params"]["time"],
+            source = config["source"]["transposonpsi"],
+            basename = Path(os.path.join(transposonpsi_dir, "chunks", "chunk-{sample}.txt")).name
+        threads:
+            HPC_CONFIG.get_cores("transposonpsi")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd} "
+            + " && ln -sf {input} "
+            + " && {params.source} "
+            + " && {params.time} transposonPSI.pl {params.basename} nuc "
+            + " && touch {output.completed}"
+            + ") 2> {log}"
+
+
+    rule mask_close_reference:
+        input:
+            fasta = rules.clean_close_reference.output.fasta,
+            allHits = expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.allHits"), output=transposonpsi_dir, sample=chunk_numbers),
+            completed = expand(os.path.join("{output}", "output_chunks", "chunk-{sample}", "chunk-{sample}.txt.TPSI.completed"), output=transposonpsi_dir, sample=chunk_numbers)
+        output:
+            allHits = os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.allHits"),
+            allHits_bed = os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.allHits.bed"),
+            fasta = os.path.join(transposonpsi_dir, close_reference_name + ".TPSI.HMask.fasta"),
+            completed = os.path.join(transposonpsi_dir, "mask_close_reference.completed")
+        log:
+            os.path.join(logs_dir, "mask_close_reference.log")
+        params:
+            cwd = os.path.join(transposonpsi_dir),
+            time = config["params"]["time"],
+            source = config["source"]["bedtools"],
+            allHits = os.path.join("output_chunks", "chunk-*", "chunk-*.txt.TPSI.allHits")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd} "
+            + " && cat {params.allHits} > {output.allHits} "
+            + " && cat {output.allHits} | awk -F \"\\t\" '{{ if($9>$10) {{print $6\"\\t\"$10-1\"\\t\"$9}} else {{print $6\"\\t\"$9-1\"\\t\"$10}} }}' > {output.allHits_bed} "
+            + " && {params.source} "
+            + " && {params.time} maskFastaFromBed -fi {input.fasta} -bed {output.allHits_bed} -fo {output.fasta} "
+            + " && touch {output.completed}"
+            + ") 2> {log}"
+
+    # HM the RepeatModeler library with transposons removed CDS of closely related species on:
+    # 1. Either the raw RepeatModeler libary
+    # OR
+    # 2. the RepeatModeler libary which is hardmasked by the organellar genomes
+
+    rule RepeatMasker_RepeatModeler:
+        input:
+            repeatmodeler_fasta = rules.blast.output.rmodeler_orgn_hmask if run2 else rules.RepeatModeler.output.files[0],
+            close_reference_hmask = rules.mask_close_reference.output.fasta
+        output:
+            masked_fasta = os.path.join(repeatmodeler_hmask_dir, index_name + ".HM.fa.masked"),
+            completed = os.path.join(repeatmodeler_hmask_dir,"RepeatMasker_RepeatModeler.completed")
+        log:
+            os.path.join(logs_dir,"RepeatMasker_RepeatModeler.log")
+        params:
+            cwd = repeatmodeler_hmask_dir,
+            extra = "-engine ncbi -a -x -gff -nolow",
+            time = config["params"]["time"],
+            source = config["source"]["repeatmasker"],
+            bname_repeatmodeler_fasta = Path(rules.blast.output.rmodeler_orgn_hmask).name if run2 else Path(rules.RepeatModeler.output.files[0]).name,
+            bname_close_reference_hmask = Path(rules.mask_close_reference.output.fasta).name
+        threads:
+            HPC_CONFIG.get_cores("RepeatMasker_RepeatModeler")
+        shell:
+            "(set +u"
+            + " && cd {params.cwd} "
+            + " && ln -sf {input.repeatmodeler_fasta} "
+            + " && ln -sf {input.close_reference_hmask} "
+            + " && {params.source} "
+            + " && {params.time} RepeatMasker {params.extra} -pa {threads} -dir {params.cwd} -lib {params.bname_close_reference_hmask} {params.bname_repeatmodeler_fasta}"
+            + " && touch {output.completed}"
+            + ") 2> {log}"
+
+# 3 Softmask the assembly with the Rmodeler library for the Interspersed repeats masking:
+
+rule RepeatMasker_interspersed_repeatmodeler:
+    input:
+        fasta = rules.clean_genome.output.fasta,
+        # run1 : Raw : rules.RepeatModeler.output.files[0]
+        # run2 : Organellar : rules.blast.output.rmodeler_orgn_hmask
+        # run3 : Close Reference : RepeatMasker_RepeatModeler.output.masked_fasta
+        # run4 : Organellar + Close Reference : RepeatMasker_RepeatModeler.output.masked_fasta
+        repeatmodeler_fasta = rules.RepeatModeler.output.files[0] if run1 else (rules.blast.output.rmodeler_orgn_hmask if run2 else rules.RepeatMasker_RepeatModeler.output.masked_fasta)
+    output:
+        gff = os.path.join(interspersed_repeatmodeler_dir, index_name + ".out.gff"),
+        completed = os.path.join(interspersed_repeatmodeler_dir, "RepeatMasker_interspersed_repeatmodeler.completed")
+    log:
+        os.path.join(logs_dir,"RepeatMasker_interspersed_repeatmodeler.log")
+    params:
+        cwd = interspersed_repeatmodeler_dir,
+        extra = "-engine ncbi -a -xsmall -gff -nolow",
         time = config["params"]["time"],
         source = config["source"]["repeatmasker"]
     threads:
-        HPC_CONFIG.get_cores("RepeatMasker_low")
+        HPC_CONFIG.get_cores("RepeatMasker_interspersed_repeatmodeler")
     shell:
         "(set +u"
         + " && cd {params.cwd} "
         + " && {params.source} "
-        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
-        + " && touch {output}"
-        + ") 2> {log}"
-
-# Filter 'Unknown|Other' from RepeatModeler repeats
-rule blast:
-    input:
-        # get the RepeatModeler fasta file
-        repeatmodeler_fasta = rules.RepeatModeler.output.files[0],
-        organellar_fasta = config["organellar_fasta"]
-    output:
-        fasta = os.path.join(blast_dir, index_name + ".unknown.fasta"),
-        blast = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr"),
-        blast_bed = os.path.join(blast_dir, index_name + ".unknown.fasta-vs-organellar.blastn.tblr.bed"),
-        hmask_rm = os.path.join(blast_dir, index_name + ".organellarGenome.HM.fa"),
-        completed = os.path.join(blast_dir, "blast.completed")
-    log:
-        os.path.join(logs_dir,"blast.log")
-    params:
-        cwd = blast_dir,
-        unknown = "'Unknown|Other'",
-        time = config["params"]["time"],
-        basename_repeatmodeler_fasta = os.path.basename(rules.RepeatModeler.output.files[0]),
-        basename_organellar_fasta = os.path.basename(config["organellar_fasta"]),
-        source_blast = config["source"]["blast"],
-        extra = "\'6 qseqid sseqid pident qstart qend sstart send qlen slen length nident mismatch positive gapopen gaps evalue bitscore\'",
-        source_seqkit = config["source"]["seqkit"],
-        source_bedtools = config["source"]["bedtools"]
-    threads:
-        HPC_CONFIG.get_cores("blast")
-    shell:
-        "(set +u"
-        + " && cd {params.cwd} "
-        + " && ln -s {input.repeatmodeler_fasta} "
-        + " && {params.source_seqkit} "
-        + " && {params.time} seqkit grep -r -p {params.unknown} {params.basename_repeatmodeler_fasta} -o {output.fasta}"
-        + " && {params.source_blast} "
-        + " && ln -s {input.organellar_fasta} "
-        + " && {params.time} makeblastdb -dbtype nucl -in {params.basename_organellar_fasta} -input_type fasta"
-        + " && {params.time} blastn -task blastn -query {output.fasta} -db {params.basename_organellar_fasta} -evalue 1e-5 -num_threads {threads} -outfmt {params.extra} -out {output.blast}"
-        + """ && {params.time} cat {output.blast} | {params.time} awk -F '\\t' '{{print $1\"\\t\"$4-1\"\\t\"$5}}' | sort -u > {output.blast_bed}"""
-        + " && {params.source_bedtools} "
-        + " && {params.time} maskFastaFromBed -fi {params.basename_repeatmodeler_fasta} -bed {output.blast_bed} -fo {output.hmask_rm} "
+        + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.repeatmodeler_fasta} -dir {params.cwd} {input.fasta}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
-#  'source bedtools-2.25.0 && maskFastaFromBed -fi genome_db-families.fa -fo genome_db-families.organellarGenome.HM.fa -bed genome_db-families.fa.unknown.fasta-vs-eudicotyledons.genetic_compartments.849434.07Dec2021.Entrez.sequence.fasta.blastn.tblr.bed'
-# Monday, 07 March 2022, 07:55PM (kaithakg)
+# # 3.4 Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
+
+# rule RepeatMasker_interspersed_HM_repeatmodeler:
+#     input:
+#         fasta = rules.clean_genome.output.fasta,
+#         rmodeler_hmask = rules.RepeatMasker_RepeatModeler.output.masked_fasta
+#     output:
+#         gff = os.path.join(interspersed_HM_repeatmodeler_dir, index_name + ".out.gff"),
+#         completed = os.path.join(interspersed_HM_repeatmodeler_dir, "RepeatMasker_interspersed_HM_repeatmodeler.completed")
+#     log:
+#         os.path.join(logs_dir,"RepeatMasker_interspersed_HM_repeatmodeler.log")
+#     params:
+#         cwd = interspersed_HM_repeatmodeler_dir,
+#         extra = "-engine ncbi -a -xsmall -gff -nolow",
+#         time = config["params"]["time"],
+#         source = config["source"]["repeatmasker"]
+#     threads:
+#         HPC_CONFIG.get_cores("RepeatMasker_interspersed_HM_repeatmodeler")
+#     shell:
+#         "(set +u"
+#         + " && cd {params.cwd} "
+#         + " && {params.source} "
+#         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.rmodeler_hmask} -dir {params.cwd} {input.fasta}"
+#         + " && touch {output.completed}"
+#         + ") 2> {log}"
 
 
-# TO DO : 4. Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
+## Now combine all the repeats to one file:
+rule all_repeats:
+    input:
+        low = rules.RepeatMasker_low.output.gff,
+        interspersed_repbase = rules.RepeatMasker_interspersed.output.gff,
+        interspersed_rmodeler = rules.RepeatMasker_interspersed_repeatmodeler.output.gff
+    output:
+        gff = os.path.join(output, "all_repeats." + index_name + ".out.gff"),
+        completed = os.path.join(output, "all_repeats.completed")
+    log:
+        os.path.join(logs_dir, "all_repeats.log")
+    params:
+        cwd = os.path.join(output),
+        time = config["params"]["time"]
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && cat {input.low} {input.interspersed_repbase} {input.interspersed_rmodeler} | grep -v '^#' > {output.gff} "
+        + " && touch {output.completed}"
+        + ") 2> {log}"
+
+## Now combine all the interspersed repeats to one file:
+rule all_interspersed_repeats:
+    input:
+        interspersed_repbase = rules.RepeatMasker_interspersed.output.gff,
+        interspersed_rmodeler = rules.RepeatMasker_interspersed_repeatmodeler.output.gff
+    output:
+        gff = os.path.join(output, "all_interspersed_repeats." + index_name + ".out.gff"),
+        completed = os.path.join(output, "all_interspersed_repeats.completed")
+    log:
+        os.path.join(logs_dir, "all_interspersed_repeats.log")
+    params:
+        cwd = os.path.join(output),
+        time = config["params"]["time"]
+    shell:
+        "(set +u"
+        + " && cd {params.cwd} "
+        + " && cat {input.interspersed_repbase} {input.interspersed_rmodeler} | grep -v '^#' > {output.gff} "
+        + " && touch {output.completed}"
+        + ") 2> {log}"
 
 # add stats
+# - create bed from the genome.fa
 # - bases of RepeatModeler repeats masked by organellar repeats
-# - based of close reference CDS masked by tPSI
-
+# - bases of close reference CDS masked by transposonPSI
+# - bases and % masked by each RepeatMasker stage
+# - bases and % masked by RED repeats
+# - create proper GFF format for RepeatMasker out.gff files
 
 
 rule add_stats_to_jira:
     input:
-        rules.BuildDatabase.output,
-        rules.RepeatModeler.output.completed,
-        rules.RepeatMasker_interspersed_repeatmodeler.output,
-        rules.RepeatMasker_interspersed.output,
-        rules.RepeatMasker_low.output
+        rules.all_repeats.output.completed,
+        rules.all_interspersed_repeats.output.completed,
+        rules.red.output.completed
     output:
         os.path.join(output, "eirepeat.completed.txt")
     log:
