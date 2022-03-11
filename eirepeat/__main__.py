@@ -53,6 +53,7 @@ class RepeatsPipeline:
         )
         self.output = self.loaded_run_config["output"]
         self.species = self.loaded_run_config["species"]
+        self.logs = self.loaded_run_config["logs"]
 
         # Load the config file
         self.pap_config = yaml.load(
@@ -77,10 +78,10 @@ class RepeatsPipeline:
 
         else:
             cmd = (
-                f"mkdir -p logs && snakemake --snakefile {script_dir}/Snakefile"
+                f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
                 f" --config ppbfx={self.jira} notify={self.no_posting} verbose={self.verbose}"
-                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o logs/{{rule}}.%N.%j.cluster.log' --printshellcmds --reason "
+                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log' --printshellcmds --reason "
             )
 
         # for universal_newlines - https://stackoverflow.com/a/4417735

@@ -32,6 +32,9 @@ organellar_fasta: /path/to/organellar.fa
 
 # output folder name, NOT path
 output: ./output
+
+# output logs will be written to "logs" directory inside output folder
+logs: ./output/logs
 #####
 # END of input parameters
 #####

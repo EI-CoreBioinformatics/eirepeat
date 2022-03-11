@@ -47,6 +47,7 @@ class CreateRunConfig:
                 )
             self.args.organellar_fasta = str(Path(self.args.organellar_fasta).resolve())
         self.args.output = str(Path(self.args.output).resolve())
+        self.args.logs = str(Path(self.args.output).resolve() / "logs")
         self.run_config = dict()
         self.run_config_file = str()
 
@@ -69,9 +70,10 @@ class CreateRunConfig:
         self.run_config["close_reference"] = self.args.close_reference
         self.run_config["organellar_fasta"] = self.args.organellar_fasta
         self.run_config["output"] = self.args.output
+        self.run_config["logs"] = self.args.logs
 
         # write the new config file
-        Path(self.args.output).mkdir(parents=True, exist_ok=True)
+        Path(self.args.logs).mkdir(parents=True, exist_ok=True)
         self.run_config["hpc_config"] = DEFAULT_HPC_CONFIG_FILE
         with open(self.run_config_file, "w") as fh:
             yaml.dump(self.run_config, fh, sort_keys=False)
