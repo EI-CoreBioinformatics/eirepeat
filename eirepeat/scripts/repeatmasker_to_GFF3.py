@@ -105,7 +105,6 @@ def main():
         "-s",
         "--source",
         type=str,
-        default="RepeatMasker",
         help="Provide source for GFF3 output (default: %(default)s)",
     )
     parser.add_argument(
