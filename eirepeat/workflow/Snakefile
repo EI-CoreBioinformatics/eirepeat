@@ -568,7 +568,7 @@ if config["close_reference"]:
 
     rule RepeatMasker_RepeatModeler:
         input:
-            repeatmodeler_fasta = rules.blast.output.rmodeler_orgn_hmask if run2 else rules.RepeatModeler.output.files[0],
+            repeatmodeler_fasta = rules.blast.output.rmodeler_orgn_hmask if run4 else rules.RepeatModeler.output.files[0],
             close_reference_hmask = rules.mask_close_reference.output.fasta
         output:
             masked_fasta = os.path.join(repeatmodeler_hmask_dir, index_name + ".HM.fa.masked"),
@@ -580,17 +580,19 @@ if config["close_reference"]:
             extra = "-engine ncbi -a -x -gff -nolow",
             time = config["params"]["time"],
             source = config["source"]["repeatmasker"],
-            bname_repeatmodeler_fasta = Path(rules.blast.output.rmodeler_orgn_hmask).name if run2 else Path(rules.RepeatModeler.output.files[0]).name,
+            # one name for files comming from different routes
+            basename = index_name + ".HM.fa",
+            bname_repeatmodeler_fasta = Path(rules.blast.output.rmodeler_orgn_hmask).name if run4 else Path(rules.RepeatModeler.output.files[0]).name,
             bname_close_reference_hmask = Path(rules.mask_close_reference.output.fasta).name
         threads:
             HPC_CONFIG.get_cores("RepeatMasker_RepeatModeler")
         shell:
             "(set +u"
             + " && cd {params.cwd} "
-            + " && ln -sf {input.repeatmodeler_fasta} "
+            + " && ln -sf {input.repeatmodeler_fasta} {params.basename}"
             + " && ln -sf {input.close_reference_hmask} "
             + " && {params.source} "
-            + " && {params.time} RepeatMasker {params.extra} -pa {threads} -dir {params.cwd} -lib {params.bname_close_reference_hmask} {params.bname_repeatmodeler_fasta}"
+            + " && {params.time} RepeatMasker {params.extra} -pa {threads} -dir {params.cwd} -lib {params.bname_close_reference_hmask} {params.basename}"
             + " && touch {output.completed}"
             + ") 2> {log}"
 
