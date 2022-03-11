@@ -86,9 +86,7 @@ class CreateRunConfig:
 def main():
 
     parser = argparse.ArgumentParser(description="Script to create the run_config.yaml")
-    parser.add_argument(
-        "fasta", help="Provide fasta file. The fasta file must be unzipped"
-    )
+    parser.add_argument("fasta", help="Provide fasta file")
     parser.add_argument(
         "--species",
         required=True,
@@ -106,7 +104,7 @@ def main():
     )
     parser.add_argument(
         "--organellar_fasta",
-        help="Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this file(default: %(default)s)",
+        help="Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: %(default)s)",
     )
     parser.add_argument(
         "-o",

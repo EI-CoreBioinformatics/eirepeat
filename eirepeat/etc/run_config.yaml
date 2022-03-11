@@ -2,12 +2,15 @@
 # Input files to drive the pipeline
 #############################################
 
+# NOTES:
+# .gz files are accepted
+# all input sequences are convered to upper case
+# line width for FASTA format default to 60
+
 # provide path to genome file
-# - make sure that the genome fasta file does not contain any masked bases (small case letters), ignore any N's (n's)
-# - It is recommended that all lines of text be shorter than 80 characters in length. RepeatModeler might hang without
-#   any reason if the fasta is not properly formatted
-# - the fasta file should not be zipped
-fasta: /path/to/unzipped/genome.fa
+# - It is recommended that fasta header be shorter than 40 characters otherwise RepeatModeler might error
+# file will be renamed to 'genome.fa'
+fasta: /path/to/genome.fa
 
 # Run below command to identify the species options to provide
 # Also, check the NCBI taxonomy to identify the correct species option - https://www.ncbi.nlm.nih.gov/taxonomy
@@ -20,10 +23,12 @@ species: None
 run_red_repeats: False
 
 # Close reference protein CDS fasta to mask the RepeatModeler fasta
-close_reference : /path/to/close_reference
+# file will be renamed to 'close_reference.cds.fa'
+close_reference : /path/to/close/close_reference.cds.fa
 
-# organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta
-organellar_fasta: /path/to/organellar_fasta
+# organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler 'unknown|other' fasta
+# file will be renamed to 'organellar.fa'
+organellar_fasta: /path/to/organellar.fa
 
 # output folder name, NOT path
 output: ./output
