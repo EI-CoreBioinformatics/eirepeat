@@ -32,6 +32,7 @@ cwd = os.getcwd()
 ppbfx = config["ppbfx"] # command line
 notify = not config["notify"] # command line
 output = os.path.abspath(config["output"])
+logs_dir = os.path.abspath(config["logs"])
 index_dir = os.path.join(output,"index")
 index_name = "genome.fa" # DO NOT CHANGE THIS - IF WE DO THEN THE RED REPEATS AND THE REST OF THE PIPELINE NEEDS CAREFUL REVIEW
 close_reference_name = "close_reference.cds.fa" # DO NOT CHANGE THIS
@@ -69,13 +70,13 @@ if config['verbose']:
     print(f"jira:{config['jira_config']}")
 
 
-#######################
-# FOLDERS
-#######################
-# create logs folder
-logs_dir = os.path.join(cwd,"logs")
-if not os.path.exists(logs_dir):
-    os.makedirs(logs_dir)
+# #######################
+# # FOLDERS
+# #######################
+# # create logs folder
+# logs_dir = os.path.join(cwd,"logs")
+# if not os.path.exists(logs_dir):
+#     os.makedirs(logs_dir)
 
 
 # # ########### Helper methods ############
@@ -106,24 +107,28 @@ TARGET = [
 
     # rule RepeatMasker_low
     os.path.join(low_dir, index_name + ".out.gff"),
+    os.path.join(low_dir, index_name + ".out.gff3"),
     os.path.join(low_dir,"RepeatMasker_low.completed"),
 
     # rule RepeatMasker_interspersed
     os.path.join(interspersed_dir, index_name + ".out.gff"),
+    os.path.join(interspersed_dir, index_name + ".out.gff3"),
     os.path.join(interspersed_dir,"RepeatMasker_interspersed.completed"),
 
     # all_repeats
-    os.path.join(output, "all_repeats." + index_name + ".out.gff"),
+    os.path.join(output, "all_repeats.raw.out.gff"),
+    os.path.join(output, "all_repeats.gff3"),
     os.path.join(output, "all_repeats.completed"),
 
     # all_interspersed_repeats
-    os.path.join(output, "all_interspersed_repeats." + index_name + ".out.gff"),
+    os.path.join(output, "all_interspersed_repeats.raw.out.gff"),
+    os.path.join(output, "all_interspersed_repeats.gff3"),
     os.path.join(output, "all_interspersed_repeats.completed"),
 
     # RED repeats
     os.path.join(red_dir, "output_red_rpt", "genome.rpt"),
     os.path.join(red_dir, "genome.rpt.bed"),
-    os.path.join(red_dir, "genome.rpt.gff"),
+    os.path.join(red_dir, "genome.rpt.gff3"),
     os.path.join(red_dir, "red.completed"),
 
     os.path.join(output, "eirepeat.completed.txt") # all stats from the run is posted using this txt file
@@ -254,7 +259,7 @@ rule red:
     output:
         msk = os.path.join(red_dir, "output_red_rpt", "genome.rpt"),
         bed = os.path.join(red_dir, "genome.rpt.bed"),
-        gff = os.path.join(red_dir, "genome.rpt.gff"),
+        gff = os.path.join(red_dir, "genome.rpt.gff3"),
         completed = os.path.join(red_dir, "red.completed")
     log:
         os.path.join(logs_dir,"red.log")
@@ -309,6 +314,7 @@ rule RepeatMasker_low:
         fasta = rules.clean_genome.output.fasta
     output:
         gff = os.path.join(low_dir, index_name + ".out.gff"),
+        gff3 = os.path.join(low_dir, index_name + ".out.gff3"),
         completed = os.path.join(low_dir,"RepeatMasker_low.completed")
     log:
         os.path.join(low_dir,"RepeatMasker_low.log")
@@ -317,7 +323,8 @@ rule RepeatMasker_low:
         extra = "-engine ncbi -a -xsmall -gff -noint",
         species = config["species"],
         time = config["params"]["time"],
-        source = config["source"]["repeatmasker"]
+        source = config["source"]["repeatmasker"],
+        tag = "RM_low"
     threads:
         HPC_CONFIG.get_cores("RepeatMasker_low")
     shell:
@@ -325,6 +332,8 @@ rule RepeatMasker_low:
         + " && cd {params.cwd} "
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
+        + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_low\\t:' {output.gff}"
+        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -335,6 +344,7 @@ rule RepeatMasker_interspersed:
         fasta = rules.clean_genome.output.fasta
     output:
         gff = os.path.join(interspersed_dir, index_name + ".out.gff"),
+        gff3 = os.path.join(interspersed_dir, index_name + ".out.gff3"),
         completed = os.path.join(interspersed_dir, "RepeatMasker_interspersed.completed")
     log:
         os.path.join(logs_dir,"RepeatMasker_interspersed.log")
@@ -343,7 +353,8 @@ rule RepeatMasker_interspersed:
         extra = "-engine ncbi -a -xsmall -gff -nolow",
         species = config["species"],
         time = config["params"]["time"],
-        source = config["source"]["repeatmasker"]
+        source = config["source"]["repeatmasker"],
+        tag = "RM_int"
     threads:
         HPC_CONFIG.get_cores("RepeatMasker_interspersed")
     shell:
@@ -351,6 +362,8 @@ rule RepeatMasker_interspersed:
         + " && cd {params.cwd} "
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
+        + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_interspersed\\t:' {output.gff}"
+        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output}"
         + ") 2> {log}"
 
@@ -608,6 +621,7 @@ rule RepeatMasker_interspersed_repeatmodeler:
         repeatmodeler_fasta = rules.RepeatModeler.output.files[0] if run1 else (rules.blast.output.rmodeler_orgn_hmask if run2 else rules.RepeatMasker_RepeatModeler.output.masked_fasta)
     output:
         gff = os.path.join(interspersed_repeatmodeler_dir, index_name + ".out.gff"),
+        gff3 = os.path.join(interspersed_repeatmodeler_dir, index_name + ".out.gff3"),
         completed = os.path.join(interspersed_repeatmodeler_dir, "RepeatMasker_interspersed_repeatmodeler.completed")
     log:
         os.path.join(logs_dir,"RepeatMasker_interspersed_repeatmodeler.log")
@@ -615,7 +629,8 @@ rule RepeatMasker_interspersed_repeatmodeler:
         cwd = interspersed_repeatmodeler_dir,
         extra = "-engine ncbi -a -xsmall -gff -nolow",
         time = config["params"]["time"],
-        source = config["source"]["repeatmasker"]
+        source = config["source"]["repeatmasker"],
+        tag = "RM_int_rmod"
     threads:
         HPC_CONFIG.get_cores("RepeatMasker_interspersed_repeatmodeler")
     shell:
@@ -623,6 +638,8 @@ rule RepeatMasker_interspersed_repeatmodeler:
         + " && cd {params.cwd} "
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.repeatmodeler_fasta} -dir {params.cwd} {input.fasta}"
+        + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_interspersed_repeatmodeler\\t:' {output.gff}"
+        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -656,11 +673,15 @@ rule RepeatMasker_interspersed_repeatmodeler:
 ## Now combine all the repeats to one file:
 rule all_repeats:
     input:
-        low = rules.RepeatMasker_low.output.gff,
-        interspersed_repbase = rules.RepeatMasker_interspersed.output.gff,
-        interspersed_rmodeler = rules.RepeatMasker_interspersed_repeatmodeler.output.gff
+        low_gff = rules.RepeatMasker_low.output.gff,
+        interspersed_repbase_gff = rules.RepeatMasker_interspersed.output.gff,
+        interspersed_rmodeler_gff = rules.RepeatMasker_interspersed_repeatmodeler.output.gff,
+        low_gff3 = rules.RepeatMasker_low.output.gff3,
+        interspersed_repbase_gff3 = rules.RepeatMasker_interspersed.output.gff3,
+        interspersed_rmodeler_gff3 = rules.RepeatMasker_interspersed_repeatmodeler.output.gff3
     output:
-        gff = os.path.join(output, "all_repeats." + index_name + ".out.gff"),
+        gff = os.path.join(output, "all_repeats.raw.out.gff"),
+        gff3 = os.path.join(output, "all_repeats.gff3"),
         completed = os.path.join(output, "all_repeats.completed")
     log:
         os.path.join(logs_dir, "all_repeats.log")
@@ -670,17 +691,21 @@ rule all_repeats:
     shell:
         "(set +u"
         + " && cd {params.cwd} "
-        + " && cat {input.low} {input.interspersed_repbase} {input.interspersed_rmodeler} | grep -v '^#' > {output.gff} "
+        + " && cat {input.low_gff} {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_repeats > {output.gff} "
+        + " && cat {input.low_gff3} {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --source all_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
 ## Now combine all the interspersed repeats to one file:
 rule all_interspersed_repeats:
     input:
-        interspersed_repbase = rules.RepeatMasker_interspersed.output.gff,
-        interspersed_rmodeler = rules.RepeatMasker_interspersed_repeatmodeler.output.gff
+        interspersed_repbase_gff = rules.RepeatMasker_interspersed.output.gff,
+        interspersed_rmodeler_gff = rules.RepeatMasker_interspersed_repeatmodeler.output.gff,
+        interspersed_repbase_gff3 = rules.RepeatMasker_interspersed.output.gff3,
+        interspersed_rmodeler_gff3 = rules.RepeatMasker_interspersed_repeatmodeler.output.gff3
     output:
-        gff = os.path.join(output, "all_interspersed_repeats." + index_name + ".out.gff"),
+        gff = os.path.join(output, "all_interspersed_repeats.raw.out.gff"),
+        gff3 = os.path.join(output, "all_interspersed_repeats.gff3"),
         completed = os.path.join(output, "all_interspersed_repeats.completed")
     log:
         os.path.join(logs_dir, "all_interspersed_repeats.log")
@@ -690,7 +715,8 @@ rule all_interspersed_repeats:
     shell:
         "(set +u"
         + " && cd {params.cwd} "
-        + " && cat {input.interspersed_repbase} {input.interspersed_rmodeler} | grep -v '^#' > {output.gff} "
+        + " && cat {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_interspersed_repeats > {output.gff} "
+        + " && cat {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --source all_interspersed_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
