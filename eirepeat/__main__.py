@@ -78,6 +78,8 @@ class EIRepeat:
         self.output = self.loaded_run_config["output"]
         self.species = self.loaded_run_config["species"]
         self.logs = self.loaded_run_config["logs"]
+        # for summary
+        self.index_name = self.loaded_run_config["prefix"]["index_name"]
 
         # Load the config file
         self.pap_config = yaml.load(
@@ -124,19 +126,31 @@ class EIRepeat:
         else:
             print(
                 f"EIREPEAT completed successfully!\n\n"
-                f"The output directory is below:\n{self.output}\n\n"
-                f"- *Repeatmodeler*:\n"
-                f"- Repeatmodeler genome index directory:\n"
-                f"{self.output}/index\n"
-                f"- Repeatmodeler output files:\n"
-                f"{self.output}/index/genome_db-families.(fa,stk)\n\n"
-                f"- *RepeatMasker*:\n"
-                f"- RepeatMasker output using RepeatModeler repeats (interspersed):\n"
-                f"{self.output}/RepeatMasker_interspersed_repeatmodeler\n"
-                f"- RepeatMasker output using RepeatMasker library '{self.species}' repeats (interspersed):\n"
-                f"{self.output}/RepeatMasker_interspersed\n"
-                f"- RepeatMasker output using RepeatMasker library '{self.species}' repeats (low-complexity):\n"
-                f"{self.output}/RepeatMasker_low\n"
+                f"The output directory is below:\n{self.output}"
+                # f"\n\nRepeatModeler\n"
+                # f"RepeatModeler output files:\n"
+                # f"{self.output}/index/{self.index_name}-families.fa\n"
+                # f"{self.output}/index/{self.index_name}-families.stk"
+                f"\n\nRepeatMasker\n"
+                f"RepeatMasker output using RepeatMasker library '{self.species}' repeats (low-complexity):\n"
+                f"{self.output}/RepeatMasker_low/{self.index_name}.out.gff\n"
+                f"{self.output}/RepeatMasker_low/{self.index_name}.out.gff3\n"
+                f"\nRepeatMasker output using RepeatMasker library '{self.species}' repeats (interspersed):\n"
+                f"{self.output}/RepeatMasker_interspersed/{self.index_name}.out.gff\n"
+                f"{self.output}/RepeatMasker_interspersed/{self.index_name}.out.gff3\n"
+                f"\nRepeatMasker output using RepeatModeler repeats (interspersed):\n"
+                f"{self.output}/RepeatMasker_interspersed_repeatmodeler/{self.index_name}.out.gff\n"
+                f"{self.output}/RepeatMasker_interspersed_repeatmodeler/{self.index_name}.out.gff3\n"
+                f"\n\nMain output files\n"
+                f"All repeats (low + interspersed):\n"
+                f"{self.output}/all_repeats.raw.out.gff\n"
+                f"{self.output}/all_repeats.gff3\n"
+                f"\nAll interspersed repeats (interspersed):\n"
+                f"{self.output}/all_interspersed_repeats.raw.out.gff\n"
+                f"{self.output}/all_interspersed_repeats.gff3\n"
+                f"\n\nAdditional repeats:\n"
+                f"RED Repeats\n"
+                f"{self.output}/red/genome.rpt.gff3\n"
             )
 
 
