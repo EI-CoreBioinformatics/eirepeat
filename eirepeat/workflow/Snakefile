@@ -50,7 +50,7 @@ red_dir = os.path.join(output,"red")
 
 # DEFINE RUNS
 # run1 - RepeatModeler : Raw
-run1 = False if (config["organellar_fasta"] and config["close_reference"]) else True
+run1 = False if (config["organellar_fasta"] or config["close_reference"]) else True
 # run2 - RepeatModeler : Organellar
 run2 = True if (config["organellar_fasta"] and not config["close_reference"])  else False
 # run3 - RepeatModeler : Close Reference
@@ -280,7 +280,7 @@ rule red:
         + " && cd .. "
         + " && {params.source} "
         + " && {params.time} Red -gnm genome_directory -sco output_red_sco -cnd output_red_cnd -rpt output_red_rpt -msk output_red_msk -hmo output_red_hmo"
-        + " && {params.time} red_rpt_to_GFF3.py output_red_rpt/genome.rpt"
+        + " && {params.time} red_rpt_to_GFF3.py --output_bed {output.bed} --output_gff {output.gff} {output.msk}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
