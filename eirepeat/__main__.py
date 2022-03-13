@@ -8,23 +8,25 @@ EI Repeat Identification Pipeline
 
 # authorship and License information
 __author__ = "Gemy George Kaithakottil"
-__license__ = "GNU General Public License v3.0"
 __maintainer__ = "Gemy George Kaithakottil"
 __email__ = "Gemy.Kaithakottil@gmail.com"
 
 # import libraries
 import argparse
-from argparse import RawTextHelpFormatter
 import os
 import sys
 import subprocess
 import yaml
 import pkg_resources
+
+from eirepeat import __version__
 from eirepeat.scripts.jiracomms import JiraInfo, post_to_jira
+from eirepeat.scripts.eirepeat_configure import EIRepeatConfigure
 from eirepeat import (
     DEFAULT_PAP_CONFIG_FILE,
     DEFAULT_PAP_RUN_CONFIG_FILE,
     DEFAULT_HPC_CONFIG_FILE,
+    FULL_SPECIES_TREE_FILE,
 )
 
 from snakemake.utils import min_version
@@ -34,9 +36,31 @@ min_version("7.0")
 # get script name
 script = os.path.basename(sys.argv[0])
 script_dir = pkg_resources.resource_filename("eirepeat", "workflow")
+cwd = os.getcwd()
 
 
-class RepeatsPipeline:
+def command_configure(args):
+    print("Running configure..")
+    # check if we have a config file
+    run_config = None
+    try:
+        run_config = os.path.join(args.output, "run_config.yaml")
+    except:
+        pass
+
+    if run_config is None or args.force_reconfiguration:
+        EIRepeatConfigure(args).run()
+    elif run_config is not None:
+        print(
+            f"\nWARNING: Configuration file {run_config} already present. Please set --force-reconfiguration/-f to override this.\n"
+        )
+
+
+def command_run(args):
+    EIRepeat(args).run()
+
+
+class EIRepeat:
     def __init__(self, args):
         print("Initialising pipeline")
         self.args = args
@@ -118,59 +142,97 @@ class RepeatsPipeline:
 
 def main():
     parser = argparse.ArgumentParser(
+        prog="EI Repeat",
         description="EI Repeat Identification Pipeline",
-        formatter_class=RawTextHelpFormatter,
-        epilog="Example command:\n"
-        + script
-        + " PPBFX-611 --run_config [run_config.yaml]"
-        + "\n\nContact:"
-        + __author__
-        + "("
-        + __email__
-        + ")",
+        add_help=True,
     )
     parser.add_argument(
+        "-v", "--version", action="version", version="%(prog)s " + __version__
+    )
+    subparsers = parser.add_subparsers()
+
+    # configure
+    parser_configure = subparsers.add_parser("configure", help="see `configure -h`")
+    parser_configure.add_argument("fasta", help="Provide fasta file")
+    parser_configure.add_argument(
+        "--species",
+        required=True,
+        default=None,
+        help=f"Provide species name. Please use the file here to identify the species. Also, check the NCBI taxonomy to identify the correct species option - https://www.ncbi.nlm.nih.gov/taxonomy: {FULL_SPECIES_TREE_FILE} (default: %(default)s)",
+    )
+    parser_configure.add_argument(
+        "--run_red_repeats",
+        action="store_true",
+        help="Enable this option to generate RED repeats, in addition (default: %(default)s)",
+    )
+    parser_configure.add_argument(
+        "--close_reference",
+        help="Provide a close reference protein CDS fasta to mask the RepeatModeler fasta. Try to extract just protein coding models and remove any models identified as repeat associated from this file (default: %(default)s)",
+    )
+    parser_configure.add_argument(
+        "--organellar_fasta",
+        help="Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: %(default)s)",
+    )
+    parser_configure.add_argument(
+        "-o",
+        "--output",
+        default=os.path.join(cwd, "output"),
+        help="Provide output directory (default: %(default)s)",
+    )
+    parser_configure.add_argument(
+        "-f",
+        "--force-reconfiguration",
+        action="store_true",
+        help="Force reconfiguration (default: %(default)s)",
+    )
+    parser_configure.set_defaults(handler=command_configure)
+
+    # run
+    parser_run = subparsers.add_parser("run", help="see `run -h`")
+    parser_run.add_argument(
         "jira", help="Provide JIRA id for posting job summary. E.g., PPBFX-611"
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--run_config",
         required=True,
-        help=f"Provide run configuration YAML (Use template: {DEFAULT_PAP_RUN_CONFIG_FILE})",
+        help=f"Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: {DEFAULT_PAP_RUN_CONFIG_FILE})",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--hpc_config",
         default=DEFAULT_HPC_CONFIG_FILE,
         help="Provide HPC configuration YAML (default: %(default)s)",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--jobs",
         "-j",
         default=100,
         help="Use at most N CPU cluster/cloud jobs in parallel (default: %(default)s)",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--latency_wait",
         default=120,
         help="Wait given seconds if an output file of a job is not present after the job finished (default: %(default)s)",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "--no_posting",
         action="store_true",
         help="Use this flag if you are testing and do not want to post comments to JIRA tickets (default: %(default)s)",
     )
-    parser.add_argument(
-        "-v",
+    parser_run.add_argument(
         "--verbose",
         action="store_true",
         help="Verbose mode for debugging (default: %(default)s)",
     )
-    parser.add_argument(
+    parser_run.add_argument(
         "-np", "--dry_run", action="store_true", help="Dry run (default: %(default)s)"
     )
+    parser_run.set_defaults(handler=command_run)
 
     args = parser.parse_args()
-
-    RepeatsPipeline(args).run()
+    if hasattr(args, "handler"):
+        args.handler(args)
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":
