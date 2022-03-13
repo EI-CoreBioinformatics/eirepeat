@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Script to intergrate samplesheet onto run_config.yaml
+Script to create the run_config.yaml
 
 """
 
@@ -28,7 +28,7 @@ script = Path(sys.argv[0]).name
 cwd = os.getcwd()
 
 
-class CreateRunConfig:
+class EIRepeatConfigure:
     def __init__(self, args):
         self.args = args
         if not Path(self.args.fasta).exists():
@@ -82,7 +82,7 @@ class CreateRunConfig:
         self.process_run_config()
         self.run_config_file = os.path.join(self.args.output, "run_config.yaml")
         self.write_run_config()
-        print(f"Created run_config file: '{self.run_config_file}'")
+        print(f"\nGreat! Created run_config file: '{self.run_config_file}'\n")
 
 
 def main():
@@ -115,7 +115,7 @@ def main():
         help="Provide output directory (default: %(default)s)",
     )
     args = parser.parse_args()
-    CreateRunConfig(args).run()
+    EIRepeatConfigure(args).run()
 
 
 if __name__ == "__main__":
