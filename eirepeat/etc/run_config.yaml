@@ -61,6 +61,11 @@ source:
 #############################################
 # Job and JIRA configurations
 #############################################
+# DO NOT CHANGE THIS - IF WE DO THEN THE RED REPEATS AND THE REST OF THE PIPELINE NEEDS CAREFUL REVIEW
+prefix:
+  index_name: "genome.fa"
+  close_reference_name: "close_reference.cds.fa"
+  organellar_name: "organellar.fa"
 chunks:
   transposonpsi: 500
 params:
