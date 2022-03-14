@@ -4,10 +4,10 @@
 """
 Script to download data from NCBI
 """
-# authorship and License information
+# authorship
 __author__ = "Gemy George Kaithakottil"
 __maintainer__ = "Gemy George Kaithakottil"
-__email__ = "Gemy.Kaithakottil@gmail.com"
+__email__ = "gemygk@gmail.com"
 
 # import libraries
 import sys

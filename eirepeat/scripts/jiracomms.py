@@ -4,12 +4,10 @@
 Script to post to jira
 """
 
-# authorship and License information
+# authorship
 __author__ = "Gemy George Kaithakottil"
-__copyright__ = "Copyright 2020"
-__license__ = "GNU General Public License v3.0"
 __maintainer__ = "Gemy George Kaithakottil"
-__email__ = "Gemy.Kaithakottil@gmail.com"
+__email__ = "gemygk@gmail.com"
 
 # import libraries
 import sys
