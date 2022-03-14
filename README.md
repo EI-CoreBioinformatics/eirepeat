@@ -9,12 +9,12 @@ EIRepeat utilises below tools to identify repeats:
 
 ## Getting Started
 
-To configure a development environment for EIRepeat you need:
+To configure EIRepeat you need:
 
-* the EIRepeat source code
-* Software dependencies
+* EIRepeat source code
+* software dependencies
 
-To obtain the EIRepeat source code, please:
+To obtain the EIRepeat source code from GitHub, please execute:
 
 ```console
 git clone https://github.com/ei-corebioinformatics/eirepeat
