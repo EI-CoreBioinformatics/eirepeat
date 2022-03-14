@@ -24,11 +24,15 @@
         "cores": 1,
         "memory": 5120
     },
-    "RepeatModeler": {
+    "RepeatMasker_low": {
         "cores": 16,
         "memory": 25600
     },
     "RepeatMasker_interspersed": {
+        "cores": 16,
+        "memory": 40960
+    },
+    "RepeatModeler": {
         "cores": 16,
         "memory": 40960
     },
