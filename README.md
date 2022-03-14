@@ -233,6 +233,32 @@ All interspersed repeats (interspersed):
 Additional repeats:
 RED Repeats
 /path/to/run1/red/genome.rpt.gff3
+
+EI Repeat Summary Stats:
+All repeats (low + interspersed)
+Total Sequences                 240
+Total Bases                       2.58641e+08
+Total Masked bases                4.66707e+07
+Total Percentage Bases Masked    18.0446
+
+All interspersed repeats (interspersed)
+Total Sequences                 240
+Total Bases                       2.58641e+08
+Total Masked bases                4.11962e+07
+Total Percentage Bases Masked    15.9279
+
+RED repeats
+Total Sequences                 240
+Total Bases                       2.58641e+08
+Total Masked bases                7.83649e+07
+Total Percentage Bases Masked    30.2987
+
+
+Storage details
+Output directory:
+3.8G    /path/to/run1
+3.8G    total
+
 ```
 
 ## Workflow
