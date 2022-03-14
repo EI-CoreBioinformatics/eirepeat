@@ -80,6 +80,9 @@ class EIRepeat:
         self.logs = self.loaded_run_config["logs"]
         # for summary
         self.index_name = self.loaded_run_config["prefix"]["index_name"]
+        self.eirepeat_completed = os.path.join(
+            self.loaded_run_config["output"], "eirepeat.completed.txt"
+        )
 
         # Load the config file
         self.pap_config = yaml.load(
@@ -150,8 +153,20 @@ class EIRepeat:
                 f"{self.output}/all_interspersed_repeats.gff3\n"
                 f"\n\nAdditional repeats:\n"
                 f"RED Repeats\n"
-                f"{self.output}/red/genome.rpt.gff3\n"
+                f"{self.output}/red/genome.rpt.gff3\n\n"
             )
+            # print stats
+            with open(self.eirepeat_completed, "r") as fh:
+                print_now = False
+                for line in fh:
+                    line = line.rstrip("\n")
+                    if line.startswith("{code}"):
+                        continue
+                    if line.startswith("EI Repeat Summary Stats"):
+                        print_now = True
+                    if print_now:
+                        print(line.replace("h5. ", ""))
+                print()
 
 
 def main():
