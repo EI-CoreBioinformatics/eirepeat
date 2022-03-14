@@ -197,7 +197,7 @@ sbatch --mail-type=END --mail-user=first.last@domain.xx.xx \
 ```
 
 ## Output
-Once a job completes successfully, we should see  the details of the output file location 
+Once the job completes successfully, we should see the summary below in the log file. 
 ```console
 ...
 ...
