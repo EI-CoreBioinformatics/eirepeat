@@ -69,16 +69,6 @@ if config['verbose']:
     print(f"NOTIFY:{NOTIFY}")
     print(f"jira:{config['jira_config']}")
 
-
-# #######################
-# # FOLDERS
-# #######################
-# # create logs folder
-# logs_dir = os.path.join(cwd,"logs")
-# if not os.path.exists(logs_dir):
-#     os.makedirs(logs_dir)
-
-
 # # ########### Helper methods ############
 def notify(message, attachment=None, jira_filename=None, suffix=None):
     if NOTIFY:
@@ -203,10 +193,6 @@ if config["close_reference"]:
 if run3 or run4:
     TARGET.append(os.path.join(repeatmodeler_hmask_dir, index_name + ".HM.fa.masked"))
     TARGET.append(os.path.join(repeatmodeler_hmask_dir,"RepeatMasker_RepeatModeler.completed"))
-
-    # # rule RepeatMasker_interspersed_HM_repeatmodeler
-    # os.path.join(interspersed_HM_repeatmodeler_dir, index_name + ".out.gff"),
-    # os.path.join(interspersed_HM_repeatmodeler_dir,"RepeatMasker_interspersed_HM_repeatmodeler.completed"),
 
 if config['verbose']:
     print("##########")
@@ -644,33 +630,6 @@ rule RepeatMasker_interspersed_repeatmodeler:
         + " && touch {output.completed}"
         + ") 2> {log}"
 
-# # 3.4 Softmask the assembly with the hardmasked Rmodeler library for the Interspersed repeats masking:
-
-# rule RepeatMasker_interspersed_HM_repeatmodeler:
-#     input:
-#         fasta = rules.clean_genome.output.fasta,
-#         rmodeler_hmask = rules.RepeatMasker_RepeatModeler.output.masked_fasta
-#     output:
-#         gff = os.path.join(interspersed_HM_repeatmodeler_dir, index_name + ".out.gff"),
-#         completed = os.path.join(interspersed_HM_repeatmodeler_dir, "RepeatMasker_interspersed_HM_repeatmodeler.completed")
-#     log:
-#         os.path.join(logs_dir,"RepeatMasker_interspersed_HM_repeatmodeler.log")
-#     params:
-#         cwd = interspersed_HM_repeatmodeler_dir,
-#         extra = "-engine ncbi -a -xsmall -gff -nolow",
-#         time = config["params"]["time"],
-#         source = config["source"]["repeatmasker"]
-#     threads:
-#         HPC_CONFIG.get_cores("RepeatMasker_interspersed_HM_repeatmodeler")
-#     shell:
-#         "(set +u"
-#         + " && cd {params.cwd} "
-#         + " && {params.source} "
-#         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.rmodeler_hmask} -dir {params.cwd} {input.fasta}"
-#         + " && touch {output.completed}"
-#         + ") 2> {log}"
-
-
 ## Now combine all the repeats to one file:
 rule all_repeats:
     input:
@@ -771,8 +730,6 @@ rule add_stats_to_jira:
 
         shell("""echo -ne \"{{code}}\\n\" >> {params.eirepeat_stats}""")
 
-        # shell("""echo -ne \"\\nEI Repeat Summary:\\n{{code}}\\n\" > {params.eirepeat_stats} && {params.du} {params.cwd} >> {params.eirepeat_stats}  && echo -ne \"{{code}}\\n\" >> {params.eirepeat_stats}""")
-
         shell("""echo -ne \"\\nOutput directory:\\n{{code}}\\n\" > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details} && echo -ne \"{{code}}\\n\" >> {params.storage_details}""")
 
         with open(params.eirepeat_stats, mode='r') as in_file1, \
@@ -795,6 +752,5 @@ rule add_stats_to_jira:
             out_file.write("\nh5. Storage details")
             for line in in_file2:
                 out_file.write(f'{line}')
-            # out_file.write("\ndone")
         notify(f"Attaching {params.title} Report", output.txt, jira_filename=f"{Path(output.txt).name}")
         notify(output.txt)

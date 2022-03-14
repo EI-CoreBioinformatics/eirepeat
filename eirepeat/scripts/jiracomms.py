@@ -4,13 +4,7 @@
 Script to post to jira
 """
 
-# authorship
-__author__ = "Gemy George Kaithakottil"
-__maintainer__ = "Gemy George Kaithakottil"
-__email__ = "gemygk@gmail.com"
-
 # import libraries
-import sys
 import os
 import requests
 from requests.auth import HTTPBasicAuth
