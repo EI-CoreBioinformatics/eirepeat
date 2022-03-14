@@ -44,7 +44,7 @@ cd eirepeat
 
 To install, simply use from your current pip environment:
 ```console
-version=0.1.0 && python setup.py bdist_wheel \
+version=1.0.0 && python setup.py bdist_wheel \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
 Also make sure that both PATH and PYTHONPATH enviroments are updated 
@@ -192,7 +192,7 @@ Below is an example HPC command we use for SLURM job scheduler
 cd work_dir
 sbatch --mail-type=END --mail-user=first.last@domain.xx.xx \
     -p ei-medium -c 2 --mem 20G -J eirepeat-run1 -o out_eirepeat-run1.%N.%j.log \
-    --wrap "source eirepeat-0.1.0 && \
+    --wrap "source eirepeat-1.0.0 && \
     /usr/bin/time -v eirepeat run --run_config run1/run_config.yaml PPBFX-611"
 ```
 
