@@ -269,5 +269,5 @@ TBD
 Please raise a GitHub issue for any suggestions or issues you have.
 
 Alternatively, I can be contacted at:
-Gemy.Kaithakottil@earlham.ac.uk
+Gemy.Kaithakottil@earlham.ac.uk or 
 gemygk@gmail.com
