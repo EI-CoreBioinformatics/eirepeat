@@ -196,6 +196,45 @@ sbatch --mail-type=END --mail-user=first.last@domain.xx.xx \
     /usr/bin/time -v eirepeat run --run_config run1/run_config.yaml PPBFX-611"
 ```
 
+## Output
+Once a job completes successfully, we should see  the details of the output file location 
+```console
+...
+...
+EIREPEAT completed successfully!
+
+The output directory is below:
+/path/to/run1
+
+RepeatMasker
+RepeatMasker output using RepeatMasker library 'Insecta' repeats (low-complexity):
+/path/to/run1/RepeatMasker_low/genome.fa.out.gff
+/path/to/run1/RepeatMasker_low/genome.fa.out.gff3
+
+RepeatMasker output using RepeatMasker library 'Insecta' repeats (interspersed):
+/path/to/run1/RepeatMasker_interspersed/genome.fa.out.gff
+/path/to/run1/RepeatMasker_interspersed/genome.fa.out.gff3
+
+RepeatMasker output using RepeatModeler repeats (interspersed):
+/path/to/run1/RepeatMasker_interspersed_repeatmodeler/genome.fa.out.gff
+/path/to/run1/RepeatMasker_interspersed_repeatmodeler/genome.fa.out.gff3
+
+
+Main output files
+All repeats (low + interspersed):
+/path/to/run1/all_repeats.raw.out.gff
+/path/to/run1/all_repeats.gff3
+
+All interspersed repeats (interspersed):
+/path/to/run1/all_interspersed_repeats.raw.out.gff
+/path/to/run1/all_interspersed_repeats.gff3
+
+
+Additional repeats:
+RED Repeats
+/path/to/run1/red/genome.rpt.gff3
+```
+
 ## Workflow
 TBD
 
