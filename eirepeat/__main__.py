@@ -42,17 +42,17 @@ cwd = os.getcwd()
 def command_configure(args):
     print("Running configure..")
     # check if we have a config file
-    run_config = None
+    run_config = False
+    run_config_file = os.path.join(args.output, "run_config.yaml")
     try:
-        run_config = os.path.join(args.output, "run_config.yaml")
+        run_config = os.path.exists(run_config_file)
     except:
         pass
-
-    if run_config is None or args.force_reconfiguration:
+    if run_config is False or args.force_reconfiguration:
         EIRepeatConfigure(args).run()
-    elif run_config is not None:
+    elif run_config:
         print(
-            f"\nWARNING: Configuration file {run_config} already present. Please set --force-reconfiguration/-f to override this.\n"
+            f"\nWARNING: Configuration file '{run_config_file}' already present. Please set --force-reconfiguration/-f to override this.\n"
         )
 
 
