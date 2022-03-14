@@ -32,10 +32,6 @@
         "cores": 16,
         "memory": 40960
     },
-    "RepeatModeler": {
-        "cores": 16,
-        "memory": 40960
-    },
     "blast": {
         "cores": 16,
         "memory": 25600
