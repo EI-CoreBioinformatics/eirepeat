@@ -304,7 +304,7 @@ rule RepeatMasker_low:
         gff3 = os.path.join(low_dir, index_name + ".out.gff3"),
         completed = os.path.join(low_dir,"RepeatMasker_low.completed")
     log:
-        os.path.join(low_dir,"RepeatMasker_low.log")
+        os.path.join(logs_dir,"RepeatMasker_low.log")
     params:
         cwd = low_dir,
         extra = "-engine ncbi -a -xsmall -gff -noint",
