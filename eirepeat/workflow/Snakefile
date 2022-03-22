@@ -46,6 +46,7 @@ transposonpsi_dir = os.path.join(output,"transposonpsi")
 repeatmodeler_hmask_dir = os.path.join(output,"RepeatMasker_RepeatModeler")
 # interspersed_HM_repeatmodeler_dir = os.path.join(output,"RepeatMasker_interspersed_HM_repeatmodeler")
 red_dir = os.path.join(output,"red")
+run_red_repeats = config["run_red_repeats"]
 
 
 # DEFINE RUNS
@@ -64,6 +65,7 @@ if config['verbose']:
     print(f"run2:{run2}")
     print(f"run3:{run3}")
     print(f"run4:{run4}")
+    print(f"run_red_repeats:{run_red_repeats}")
     print(f"output:{output}")
     print(f"jira/ppbfx:{ppbfx}")
     print(f"NOTIFY:{NOTIFY}")
@@ -115,15 +117,16 @@ TARGET = [
     os.path.join(output, "all_interspersed_repeats.gff3"),
     os.path.join(output, "all_interspersed_repeats.completed"),
 
-    # RED repeats
-    os.path.join(red_dir, "output_red_rpt", "genome.rpt"),
-    os.path.join(red_dir, "genome.rpt.bed"),
-    os.path.join(red_dir, "genome.rpt.gff3"),
-    os.path.join(red_dir, "red.completed"),
-
     os.path.join(output, index_name + ".bed"),
     os.path.join(output, "eirepeat.completed.txt") # all stats from the run is posted using this txt file
 ]
+
+# RED repeats
+if run_red_repeats:
+    TARGET.append(os.path.join(red_dir, "output_red_rpt", "genome.rpt"))
+    TARGET.append(os.path.join(red_dir, "genome.rpt.bed"))
+    TARGET.append(os.path.join(red_dir, "genome.rpt.gff3"))
+    TARGET.append(os.path.join(red_dir, "red.completed"))
 
 # DEFINE MAIN RUNS TO EXECUTE
 # run1 - RepeatModeler : Raw
@@ -697,9 +700,9 @@ rule add_stats_to_jira:
         all_interspersed_repeats_gff = rules.all_interspersed_repeats.output.gff,
         all_interspersed_repeats_gff3 = rules.all_interspersed_repeats.output.gff3,
         all_interspersed_repeats = rules.all_interspersed_repeats.output.completed,
-        red_repeats_bed = rules.red.output.bed,
-        red_repeats_gff = rules.red.output.gff,
-        red_repeats = rules.red.output.completed
+        red_repeats_bed = rules.red.output.bed if run_red_repeats else rules.clean_genome.output.fasta,
+        red_repeats_gff = rules.red.output.gff if run_red_repeats else rules.clean_genome.output.fasta,
+        red_repeats = rules.red.output.completed if run_red_repeats else rules.clean_genome.output.fasta
     output:
         bed = os.path.join(output, Path(rules.clean_genome.output.fasta).name + ".bed"),
         txt = os.path.join(output, "eirepeat.completed.txt")
@@ -725,8 +728,9 @@ rule add_stats_to_jira:
         # All interspersed repeats
         shell("""echo -ne \"All interspersed repeats (interspersed)\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.all_interspersed_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
-        # RED repeats
-        shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.red_repeats_bed} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+        if run_red_repeats:
+            # RED repeats
+            shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.red_repeats_bed} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         shell("""echo -ne \"{{code}}\\n\" >> {params.eirepeat_stats}""")
 
@@ -744,8 +748,9 @@ rule add_stats_to_jira:
             out_file.write(f"\nAll interspersed repeats (interspersed):\n")
             out_file.write(f"{input.all_interspersed_repeats_gff}\n")
             out_file.write(f"{input.all_interspersed_repeats_gff3}\n")
-            out_file.write(f"\nRED Repeats:\n")
-            out_file.write(f"{input.red_repeats_gff}\n")
+            if run_red_repeats:
+                out_file.write(f"\nRED Repeats:\n")
+                out_file.write(f"{input.red_repeats_gff}\n")
             out_file.write("\n{noformat}\n")
             for line in in_file1:
                 out_file.write(f'{line}')

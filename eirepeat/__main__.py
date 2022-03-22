@@ -77,6 +77,7 @@ class EIRepeat:
         )
         self.output = self.loaded_run_config["output"]
         self.species = self.loaded_run_config["species"]
+        self.run_red_repeats = self.loaded_run_config["run_red_repeats"]
         self.logs = self.loaded_run_config["logs"]
         # for summary
         self.index_name = self.loaded_run_config["prefix"]["index_name"]
@@ -151,10 +152,13 @@ class EIRepeat:
                 f"\nAll interspersed repeats (interspersed):\n"
                 f"{self.output}/all_interspersed_repeats.raw.out.gff\n"
                 f"{self.output}/all_interspersed_repeats.gff3\n"
-                f"\n\nAdditional repeats:\n"
-                f"RED Repeats\n"
-                f"{self.output}/red/genome.rpt.gff3\n\n"
             )
+            if self.run_red_repeats:
+                print(
+                    f"\n\nAdditional repeats:\n"
+                    f"RED Repeats\n"
+                    f"{self.output}/red/genome.rpt.gff3\n\n"
+                )
             # print stats
             with open(self.eirepeat_completed, "r") as fh:
                 print_now = False
