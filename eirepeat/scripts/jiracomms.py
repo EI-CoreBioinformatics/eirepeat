@@ -13,17 +13,6 @@ import json
 # Header for HTTP request, make sure it knows a JSON object is coming
 head = {"Content-type": "application/json"}
 
-# JIRA wasn't originally designed to store fields specifically relating to sequencing, so these are set via custom fields
-# CUSTOM_FIELD = {
-#     "platform": "customfield_10410",
-#     "instrument": "customfield_10528",
-#     "chemistry": "customfield_11010",
-#     "custom_primers": "customfield_10522",
-#     "read_config": "customfield_10411"
-# }
-
-CUSTOM_FIELD = {"pip": "customfield_11012", "pipeline": "customfield_11226"}
-
 
 class JiraInfo:
     # Base address for JIRA
@@ -48,30 +37,6 @@ class JiraInfo:
             )
         else:
             JiraInfo.SITE = JiraInfo.CREDENTIALS = None
-
-    @staticmethod
-    def get_ticket(jira_id):
-        # The URL to JIRA using JQL.  Custom field 10410 refers to the platform field and 10528 refers to the instrument field.
-        url = (
-            JiraInfo.SITE
-            + "/rest/api/latest/search?jql=key="
-            + jira_id
-            + "&fields=summary,"
-            + ",".join(list(CUSTOM_FIELD.values()))
-        )
-
-        # Get the data from jira
-        response = requests.get(url, headers=head, auth=JiraInfo.CREDENTIALS)
-        if not response.ok:
-            raise ValueError(
-                "Error retrieving JIRA ticket "
-                + jira_id
-                + "\nResponse code: "
-                + str(response.status_code)
-                + "\nReason: "
-                + response.reason
-            )
-        return None
 
     def post_comment(self, comment):
         """
@@ -197,7 +162,6 @@ def post_to_jira(jira_id, comment, jira_config=None):
     """
     if jira_config:
         JiraInfo.initialise(pap_config=jira_config)
-    # return JiraInfo.get_ticket(jira_id).post_comment(comment)
     return JiraInfo(jira_id).post_comment(comment)
 
 
@@ -215,7 +179,6 @@ def post_attachment_to_jira(
     """
     if jira_config:
         JiraInfo.initialise(pap_config=jira_config)
-    # return JiraInfo.get_ticket(jira_id).post_attachment(prefix, file_to_attach, name if name and name != "" else os.path.basename(file_to_attach), suffix)
     return JiraInfo(jira_id).post_attachment(
         prefix,
         file_to_attach,

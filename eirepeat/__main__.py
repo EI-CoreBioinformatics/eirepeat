@@ -20,11 +20,10 @@ import yaml
 import pkg_resources
 
 from eirepeat import __version__
-from eirepeat.scripts.jiracomms import JiraInfo, post_to_jira
+from eirepeat.scripts.jiracomms import JiraInfo
 from eirepeat.scripts.eirepeat_configure import EIRepeatConfigure
 from eirepeat import (
-    DEFAULT_PAP_CONFIG_FILE,
-    DEFAULT_PAP_RUN_CONFIG_FILE,
+    DEFAULT_CONFIG_FILE,
     DEFAULT_HPC_CONFIG_FILE,
     FULL_SPECIES_TREE_FILE,
 )
@@ -64,7 +63,6 @@ class EIRepeat:
     def __init__(self, args):
         print("Initialising pipeline")
         self.args = args
-        self.jira = args.jira
         self.run_config = args.run_config
         self.hpc_config = args.hpc_config
         self.jobs = args.jobs
@@ -75,6 +73,7 @@ class EIRepeat:
         self.loaded_run_config = yaml.load(
             open(self.run_config), Loader=yaml.SafeLoader
         )
+        self.jira_id = self.loaded_run_config["jira"]["jira_id"]
         self.output = self.loaded_run_config["output"]
         self.species = self.loaded_run_config["species"]
         self.run_red_repeats = self.loaded_run_config["run_red_repeats"]
@@ -86,12 +85,11 @@ class EIRepeat:
         )
 
         # Load the config file
-        self.pap_config = yaml.load(
-            open(DEFAULT_PAP_CONFIG_FILE), Loader=yaml.SafeLoader
-        )
+        self.pap_config = yaml.load(open(DEFAULT_CONFIG_FILE), Loader=yaml.SafeLoader)
 
         # Gets JIRA ticket from server (or makes one from args provided if args are set appropriately)
-        JiraInfo(self.jira).initialise(pap_config=self.pap_config)
+        if self.jira_id:
+            JiraInfo(self.jira_id).initialise(pap_config=self.pap_config)
 
     def run(self):
         print("Running the pipeline..")
@@ -101,7 +99,7 @@ class EIRepeat:
             cmd = (
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
-                f" --config ppbfx={self.jira} notify={self.no_posting} verbose={self.verbose}"
+                f" --config notify={self.no_posting} verbose={self.verbose}"
                 f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}}' -np --reason "
             )
             print(cmd)
@@ -110,7 +108,7 @@ class EIRepeat:
             cmd = (
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
-                f" --config ppbfx={self.jira} notify={self.no_posting} verbose={self.verbose}"
+                f" --config notify={self.no_posting} verbose={self.verbose}"
                 f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log' --printshellcmds --reason "
             )
 
@@ -207,6 +205,10 @@ def main():
         help="Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: %(default)s)",
     )
     parser_configure.add_argument(
+        "--jira",
+        help="Provide JIRA id for posting job summary. E.g., PPBFX-611 (default: %(default)s)",
+    )
+    parser_configure.add_argument(
         "-o",
         "--output",
         default=os.path.join(cwd, "output"),
@@ -223,12 +225,8 @@ def main():
     # run
     parser_run = subparsers.add_parser("run", help="see `run -h`")
     parser_run.add_argument(
-        "jira", help="Provide JIRA id for posting job summary. E.g., PPBFX-611"
-    )
-    parser_run.add_argument(
-        "--run_config",
-        required=True,
-        help=f"Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: {DEFAULT_PAP_RUN_CONFIG_FILE})",
+        "run_config",
+        help=f"Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: {DEFAULT_CONFIG_FILE})",
     )
     parser_run.add_argument(
         "--hpc_config",

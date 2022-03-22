@@ -71,12 +71,13 @@ chunks:
 params:
   time: "/usr/bin/time -v "
   du: "/usr/bin/time -v du -sch "
-jira_config:
-  jira:
-    site: "http://jira.earlham.ac.uk"
-    username: "tgacpap"
-    password_file: "/ei/cb/common/.jira_pwd"
-
+jira:
+  # jira_id : "PPBFX-611" # An example
+  jira_id : ""
+  site: "http://jira.earlham.ac.uk"
+  username: "tgacpap"
+  password_file: "/ei/cb/common/.jira_pwd"
+notify_jira: False
 #############################################
 # END of Job and JIRA configurations
 #############################################

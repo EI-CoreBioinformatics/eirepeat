@@ -29,8 +29,10 @@ min_version("7.0")
 
 # declare variables
 cwd = os.getcwd()
-ppbfx = config["ppbfx"] # command line
+jira_id = config["jira"]["jira_id"] # command line
 NOTIFY = not config["notify"] # command line
+if not Path(config["jira"]["password_file"]).is_file() or not jira_id:
+    NOTIFY = False
 output = os.path.abspath(config["output"])
 logs_dir = os.path.abspath(config["logs"])
 index_dir = os.path.join(output,"index")
@@ -67,19 +69,20 @@ if config['verbose']:
     print(f"run4:{run4}")
     print(f"run_red_repeats:{run_red_repeats}")
     print(f"output:{output}")
-    print(f"jira/ppbfx:{ppbfx}")
+    print(f"jira_id:{jira_id}")
     print(f"NOTIFY:{NOTIFY}")
-    print(f"jira:{config['jira_config']}")
+    print(f"jira:{config['jira']}")
+    print(f"config:{config}")
 
 # # ########### Helper methods ############
 def notify(message, attachment=None, jira_filename=None, suffix=None):
     if NOTIFY:
         if attachment:
-            if not post_attachment_to_jira(ppbfx, message, attachment, name=jira_filename, suffix=suffix, jira_config=config["jira_config"]):
-                print(f"Failed to POST attachment to JIRA ticket: {ppbfx}")
+            if not post_attachment_to_jira(jira_id, message, attachment, name=jira_filename, suffix=suffix, jira_config=config):
+                print(f"Failed to POST attachment to JIRA ticket: {jira_id}")
         else:
-            if not post_to_jira(ppbfx, message, jira_config=config["jira_config"]):
-                print(f"Failed to POST to JIRA ticket: {ppbfx}; Message: {message}")
+            if not post_to_jira(jira_id, message, jira_config=config):
+                print(f"Failed to POST to JIRA ticket: {jira_id}; Message: {message}")
 
 #######################
 # RULES STARTS HERE
@@ -684,13 +687,6 @@ rule all_interspersed_repeats:
         + ") 2> {log}"
 
 # add stats
-# - create bed from the genome.fa
-# - bases of RepeatModeler repeats masked by organellar repeats
-# - bases of close reference CDS masked by transposonPSI
-# - bases and % masked by each RepeatMasker stage
-# - bases and % masked by RED repeats
-
-
 rule add_stats_to_jira:
     input:
         fasta = rules.clean_genome.output.fasta,

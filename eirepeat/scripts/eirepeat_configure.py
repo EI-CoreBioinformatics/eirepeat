@@ -17,7 +17,7 @@ import sys
 import os
 import yaml
 from eirepeat import (
-    DEFAULT_PAP_RUN_CONFIG_FILE,
+    DEFAULT_CONFIG_FILE,
     DEFAULT_HPC_CONFIG_FILE,
     FULL_SPECIES_TREE_FILE,
 )
@@ -52,7 +52,7 @@ class EIRepeatConfigure:
         self.run_config_file = str()
 
     def process_run_config(self):
-        with open(DEFAULT_PAP_RUN_CONFIG_FILE, "r") as fh:
+        with open(DEFAULT_CONFIG_FILE, "r") as fh:
             try:
                 self.run_config = yaml.safe_load(fh)
             except yaml.YAMLError as err:
@@ -72,9 +72,11 @@ class EIRepeatConfigure:
         self.run_config["output"] = self.args.output
         self.run_config["logs"] = self.args.logs
 
-        # write the new config file
         Path(self.args.logs).mkdir(parents=True, exist_ok=True)
+        # modify any additional defaults
         self.run_config["hpc_config"] = DEFAULT_HPC_CONFIG_FILE
+        self.run_config["jira"]["jira_id"] = self.args.jira
+        # write the new run config file
         with open(self.run_config_file, "w") as fh:
             yaml.dump(self.run_config, fh, sort_keys=False)
 
@@ -107,6 +109,10 @@ def main():
     parser.add_argument(
         "--organellar_fasta",
         help="Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--jira",
+        help="Provide JIRA id for posting job summary. E.g., PPBFX-611 (default: %(default)s)",
     )
     parser.add_argument(
         "-o",
