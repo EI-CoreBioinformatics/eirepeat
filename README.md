@@ -75,22 +75,23 @@ optional arguments:
 EIRepeat configure
 ```console
 $ eirepeat configure --help
-usage: EI Repeat configure [-h] --species SPECIES [--run_red_repeats] [--close_reference CLOSE_REFERENCE] [--organellar_fasta ORGANELLAR_FASTA] [-o OUTPUT] [-f] fasta
+usage: EI Repeat configure [-h] --species SPECIES [--run_red_repeats] [--close_reference CLOSE_REFERENCE] [--organellar_fasta ORGANELLAR_FASTA] [--jira JIRA] [-o OUTPUT] [-f] fasta
 
 positional arguments:
   fasta                 Provide fasta file
 
 optional arguments:
   -h, --help            show this help message and exit
-  --species SPECIES     Provide species name. Please use the file here to identify the species. Also, check the NCBI taxonomy to identify the correct species option - https://www.ncbi.nlm.nih.gov/taxonomy: /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-
-                        packages/eirepeat/etc/queryRepeatDatabase.tree.txt (default: None)
+  --species SPECIES     Provide species name. Please use the file here to identify the species. Also, check the NCBI taxonomy to identify the correct species option - https://www.ncbi.nlm.nih.gov/taxonomy:
+                        /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-packages/eirepeat/etc/queryRepeatDatabase.tree.txt (default: None)
   --run_red_repeats     Enable this option to generate RED repeats, in addition (default: False)
   --close_reference CLOSE_REFERENCE
                         Provide a close reference protein CDS fasta to mask the RepeatModeler fasta. Try to extract just protein coding models and remove any models identified as repeat associated from this file (default: None)
   --organellar_fasta ORGANELLAR_FASTA
                         Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: None)
+  --jira JIRA           Provide JIRA id for posting job summary. E.g., PPBFX-611 (default: None)
   -o OUTPUT, --output OUTPUT
-                        Provide output directory (default: /ei/cb/development/kaithakg/eirepeat/dev/test_run1/output)
+                        Provide output directory (default: /ei/cb/development/kaithakg/eirepeat/dev/output)
   -f, --force-reconfiguration
                         Force reconfiguration (default: False)
 ```
@@ -98,15 +99,14 @@ optional arguments:
 EIRepeat run
 ```console
 $ eirepeat run --help
-usage: EI Repeat run [-h] --run_config RUN_CONFIG [--hpc_config HPC_CONFIG] [--jobs JOBS] [--latency_wait LATENCY_WAIT] [--no_posting] [--verbose] [-np] jira
+usage: EI Repeat run [-h] [--hpc_config HPC_CONFIG] [--jobs JOBS] [--latency_wait LATENCY_WAIT] [--no_posting] [--verbose] [-np] run_config
 
 positional arguments:
-  jira                  Provide JIRA id for posting job summary. E.g., PPBFX-611
+  run_config            Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-
+                        packages/eirepeat/etc/run_config.yaml)
 
 optional arguments:
   -h, --help            show this help message and exit
-  --run_config RUN_CONFIG
-                        Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-packages/eirepeat/etc/run_config.yaml)
   --hpc_config HPC_CONFIG
                         Provide HPC configuration YAML (default: /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-packages/eirepeat/etc/hpc_config.json)
   --jobs JOBS, -j JOBS  Use at most N CPU cluster/cloud jobs in parallel (default: 100)
@@ -183,7 +183,7 @@ Before running this, make sure that we do follow the notes under section 2 and 3
 ### eirepeat run
 EIRepeat run command is quite simple. All the above four runs can be executed like below
 ```console
-eirepeat run --run_config run1/run_config.yaml PPBFX-611
+eirepeat run run1/run_config.yaml
 ```
 NOTE:
 I would recomment to run the above command as a cluster job to avoid terminal connection drop-outs.
@@ -193,7 +193,7 @@ cd work_dir
 sbatch --mail-type=END --mail-user=first.last@domain.xx.xx \
     -p ei-medium -c 2 --mem 20G -J eirepeat-run1 -o out_eirepeat-run1.%N.%j.log \
     --wrap "source eirepeat-1.0.0 && \
-    /usr/bin/time -v eirepeat run --run_config run1/run_config.yaml PPBFX-611"
+    /usr/bin/time -v eirepeat run run1/run_config.yaml"
 ```
 
 ## Output
@@ -230,7 +230,7 @@ All interspersed repeats (interspersed):
 /path/to/run1/all_interspersed_repeats.gff3
 
 
-Additional repeats:
+Additional repeats:                                  - with --run_red_repeats option
 RED Repeats
 /path/to/run1/red/genome.rpt.gff3
 
@@ -247,7 +247,7 @@ Total Bases                       2.58641e+08
 Total Masked bases                4.11962e+07
 Total Percentage Bases Masked    15.9279
 
-RED repeats
+RED repeats                                          - with --run_red_repeats option
 Total Sequences                 240
 Total Bases                       2.58641e+08
 Total Masked bases                7.83649e+07
