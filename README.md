@@ -12,7 +12,7 @@ EIRepeat utilises below tools to identify repeats:
 
 
 ## 2 Workflow
-![Alt text](https://github.com/EI-CoreBioinformatics/eirepeat/blob/main/eirepeat/doc/eirepeat_diagram.png)
+![Alt text](/eirepeat/doc/eirepeat_diagram.png)
 Figure 1. The overview of Earlham Institute Repeat Identification Pipeline (EIRepeat)
 
 ## 3 Getting Started
