@@ -1,4 +1,7 @@
 # EIRepeat - EI Repeat Identification Pipeline
+Gemy George Kaithakottil, David Swarbreck
+
+## 1 Description
 
 EIRepeat is an easy to use pipeline to identify repeats from the genome. 
 
@@ -7,7 +10,12 @@ EIRepeat utilises below tools to identify repeats:
 2. RepeatMasker v4.0.7 - http://www.repeatmasker.org/RepeatMasker
 3. RED v22052015 - http://toolsmith.ens.utulsa.edu - [Paper here](https://doi.org/10.1186/s12859-015-0654-5)
 
-## Getting Started
+
+## 2 Workflow
+![Alt text](https://github.com/EI-CoreBioinformatics/eirepeat/blob/main/eirepeat/doc/eirepeat_diagram.png)
+Figure 1. The overview of Earlham Institute Repeat Identification Pipeline (EIRepeat)
+
+## 3 Getting Started
 
 To configure EIRepeat you need:
 
@@ -20,7 +28,7 @@ To obtain the EIRepeat source code from GitHub, please execute:
 git clone https://github.com/ei-corebioinformatics/eirepeat
 ```
 
-### Prerequisites
+### 3.1 Prerequisites
 
 For ease of development, Singularity is recommended to install the dependencies
 ```console
@@ -33,7 +41,7 @@ BLAST v2.6.0
 Bedtools v2.25.0
 ``` 
 
-### Installing
+### 3.2 Installing
 
 First obtain the source code using
 
@@ -47,15 +55,15 @@ To install, simply use from your current pip environment:
 version=1.0.0 && python setup.py bdist_wheel \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
-Also make sure that both PATH and PYTHONPATH enviroments are updated 
+Also make sure that both PATH and PYTHONPATH environments are updated 
 ```console
 export PATH=/path/to/software/eirepeat/${version}/x86_64/bin:$PATH
 export PYTHONPATH=/path/to/software/eirepeat/${version}/x86_64/lib/python3.9/site-packages
 ```
 
-## Running EIRepeat
+## 4 Running EIRepeat
 
-### Get help
+### 4.1 Get help
 ```console
 $ eirepeat --help
 usage: EI Repeat [-h] [-v] {configure,run} ...
@@ -117,9 +125,9 @@ optional arguments:
   -np, --dry_run        Dry run (default: False)
 ```
 
-### Execution
+### 4.2 Execution
 
-### eirepeat configure
+### 4.2.1 eirepeat configure
 There are mainly four ways you can configure EIRepeat to run, depending upon the types of evidence you have.
 #### 1. Using just the genome 
 ```console
@@ -180,7 +188,7 @@ NOTE:
 Before running this, make sure that we do follow the notes under section 2 and 3 to prepare the inputs
 
 
-### eirepeat run
+### 4.2.2 eirepeat run
 EIRepeat run command is quite simple. All the above four runs can be executed like below
 ```console
 eirepeat run run1/run_config.yaml
@@ -196,7 +204,7 @@ sbatch --mail-type=END --mail-user=first.last@domain.xx.xx \
     /usr/bin/time -v eirepeat run run1/run_config.yaml"
 ```
 
-## Output
+## 5. Output
 Once the job completes successfully, we should see the summary below in the log file. 
 ```console
 ...
@@ -261,12 +269,8 @@ Output directory:
 
 ```
 
-## Workflow
-TBD
-
-
-## Reporting suggestions/issues
-Please raise a GitHub issue for any suggestions or issues you have.
+## 6 Reporting suggestions/issues
+Please raise a GitHub issue for any suggestions or issues you may have.
 
 Alternatively, I can be contacted at:
 Gemy.Kaithakottil@earlham.ac.uk or 
