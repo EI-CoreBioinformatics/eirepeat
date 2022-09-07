@@ -31,7 +31,8 @@ min_version("7.0")
 cwd = os.getcwd()
 jira_id = config["jira"]["jira_id"] # command line
 NOTIFY = not config["notify"] # command line
-if not Path(config["jira"]["password_file"]).is_file() or not jira_id:
+if not os.access(config["jira"]["password_file"], os.R_OK) or not Path(config["jira"]["password_file"]).is_file() or not jira_id:
+    print("JIRA notification is disabled")
     NOTIFY = False
 output = os.path.abspath(config["output"])
 logs_dir = os.path.abspath(config["logs"])
