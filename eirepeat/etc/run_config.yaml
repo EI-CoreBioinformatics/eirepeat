@@ -74,7 +74,7 @@ params:
 jira:
   # jira_id : "PPBFX-611" # An example
   jira_id : ""
-  site: "http://jira.earlham.ac.uk"
+  site: "http://jira-uat.earlham.ac.uk"
   username: "tgacpap"
   password_file: "/ei/cb/common/.jira_pwd"
 notify_jira: False
