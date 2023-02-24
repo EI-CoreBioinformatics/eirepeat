@@ -137,6 +137,11 @@ Running configure..
 Great! Created run_config file: '/path/to/run1/run_config.yaml'
 
 ```
+:exclamation: **IMPORTANT NOTE:**  
+In all cases, it is **recommended** that the genome fasta headers be shorter than <50 characters otherwise RepeatModeler might error, like:
+```
+FastaDB::_cleanIndexAndCompact(): Fasta file contains a sequence identifier which is too long ( max id length = 50 )
+```
 
 #### 2. Using just the genome and organellar fasta
 ```console
@@ -148,13 +153,27 @@ Running configure..
 Great! Created run_config file: '/path/to/run2/run_config.yaml'
 
 ```
-NOTE:
+NOTE:  
 You can use the script `ncbi_download.py` to download organellar fasta file from NCBI, please see below a real eample where we download both `mitochondrion` and `chloroplast` fasta for all `eudicotyledons`.
-Please make sure that you have external internet access before executing this script.
+Please make sure that you have external internet access before executing the `ncbi_download.py` script.
 
+```console
+ncbi_download.py \
+  -e first.last@domain.xx.xx \
+  '"eudicotyledons"[Organism] AND (mitochondrion[filter] OR chloroplast[filter])' \
+  eudicotyledons.genetic_compartments.849434.07Dec2021.sequence.fasta
 ```
-ncbi_download.py -e first.last@domain.xx.xx '"eudicotyledons"[Organism] AND (mitochondrion[filter] OR chloroplast[filter])' eudicotyledons.genetic_compartments.849434.07Dec2021.Entrez.sequence.fasta
-```
+ 
+In the above example command, I use the name `eudicotyledons.genetic_compartments.849434.07Dec2021.sequence.fasta`
+just to keep a record of the data for our own reference, where:
+ - eudicotyledons : is the organism name
+ - 849434         : is the number of hits received for [query](https://www.ncbi.nlm.nih.gov/nuccore/?term=%22eudicotyledons%22%5BOrganism%5D+AND+(mitochondrion%5Bfilter%5D+OR+chloroplast%5Bfilter%5D)) on 07Dec2021 from NCBI nuccore. This number might differ on another date for your query.
+ - 07Dec2021      : is the date data was downloaded
+
+You can call the output fasta with any name.
+
+
+
 
 #### 3. Using just the genome and close reference protein coding CDS fasta
 ```console
@@ -166,7 +185,7 @@ Running configure..
 Great! Created run_config file: '/path/to/run3/run_config.yaml'
 
 ```
-NOTE:
+NOTE:  
 Here, make sure that the CDS fasta file you provide with --close_reference is only the protein coding CDS models.
 What I would do here is that:
 1. Extract only models with `gene_biotype` and `transcript_biotype` marked as `protein_coding`
@@ -185,7 +204,7 @@ Running configure..
 Great! Created run_config file: '/path/to/run4/run_config.yaml'
 
 ```
-NOTE:
+NOTE:  
 Before running this, make sure that we do follow the notes under section 2 and 3 to prepare the inputs
 
 
@@ -194,7 +213,7 @@ EIRepeat run command is quite simple. All the above four runs can be executed li
 ```console
 eirepeat run run1/run_config.yaml
 ```
-NOTE:
+NOTE:  
 I would recomment to run the above command as a cluster job to avoid terminal connection drop-outs.
 Below is an example HPC command we use for SLURM job scheduler 
 ```console
