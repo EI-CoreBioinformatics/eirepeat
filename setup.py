@@ -7,7 +7,7 @@ requirements = [line.rstrip() for line in open("requirements.txt", "rt")]
 
 setup(
     name="eirepeat",
-    version="1.2.0",
+    version="1.3.0",
     description="eirepeat - EI Repeat Identification pipeline",
     author="Gemy Kaithakottil",
     author_email="Gemy.Kaithakottil@earlham.ac.uk",
