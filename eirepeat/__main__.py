@@ -69,6 +69,7 @@ class EIRepeat:
         self.latency_wait = args.latency_wait
         self.no_posting = args.no_posting
         self.verbose = args.verbose
+        self.exclude_hosts = args.exclude_hosts
         self.dry_run = args.dry_run
         self.loaded_run_config = yaml.load(
             open(self.run_config), Loader=yaml.SafeLoader
@@ -99,9 +100,9 @@ class EIRepeat:
             cmd = (
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
-                f" --config notify={self.no_posting} verbose={self.verbose}"
-                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}}' -np --reason "
+                f" --config notify={self.no_posting} verbose={self.verbose} -np --reason"
             )
+            cmd += " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J} --exclude={cluster.exclude}'" if self.exclude_hosts else " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J}'"
             print(cmd)
 
         else:
@@ -109,8 +110,9 @@ class EIRepeat:
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
                 f" --config notify={self.no_posting} verbose={self.verbose}"
-                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log' --printshellcmds --reason "
+                " --printshellcmds --reason "
             )
+            cmd += f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log --exclude={{cluster.exclude}}'" if self.exclude_hosts else f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log'"
 
         # for universal_newlines - https://stackoverflow.com/a/4417735
         p = subprocess.Popen(
@@ -253,6 +255,9 @@ def main():
         "--verbose",
         action="store_true",
         help="Verbose mode for debugging (default: %(default)s)",
+    )
+    parser_run.add_argument(
+        "-x", "--exclude_hosts", action="store_true", help="Enable excluding a specific list of hosts specified in the --hpc_config 'exclude' section (default: %(default)s)"
     )
     parser_run.add_argument(
         "-np", "--dry_run", action="store_true", help="Dry run (default: %(default)s)"
