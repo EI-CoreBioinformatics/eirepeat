@@ -107,7 +107,7 @@ optional arguments:
 EIRepeat run
 ```console
 $ eirepeat run --help
-usage: EI Repeat run [-h] [--hpc_config HPC_CONFIG] [--jobs JOBS] [--latency_wait LATENCY_WAIT] [--no_posting] [--verbose] [-np] run_config
+usage: EI Repeat run [-h] [--hpc_config HPC_CONFIG] [--jobs JOBS] [--latency_wait LATENCY_WAIT] [--no_posting] [--verbose] [-x] [-np] run_config
 
 positional arguments:
   run_config            Provide run configuration YAML. Run 'eirepeat configure -h' to generate the run configuration YAML file. (Description template file is here: /ei/software/cb/eirepeat/dev/x86_64/lib/python3.9/site-
@@ -122,6 +122,7 @@ optional arguments:
                         Wait given seconds if an output file of a job is not present after the job finished (default: 120)
   --no_posting          Use this flag if you are testing and do not want to post comments to JIRA tickets (default: False)
   --verbose             Verbose mode for debugging (default: False)
+  -x, --exclude_hosts   Enable excluding a specific list of hosts specified in the --hpc_config 'exclude' section (default: False)
   -np, --dry_run        Dry run (default: False)
 ```
 
@@ -289,7 +290,13 @@ Output directory:
 
 ```
 
-## 6 Reporting suggestions/issues
+## 6 Troubleshooting
+### SLURM specific
+If there are certain cluster nodes/hosts you would like to exclude when running the pipeline, you can update the `--hpc_config` JSON file in the `exclude` field.
+Once you have updated the HPC config JSON file, you can provide that to the eirepeat pipeline, like `eirepeat run --exclude_hosts`.  
+**Remember** to use `--exclude_hosts` when you do this.
+
+## 7 Reporting suggestions/issues
 Please raise a GitHub issue for any suggestions or issues you may have.
 
 Alternatively, I can be contacted at:
