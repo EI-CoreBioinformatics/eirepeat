@@ -74,9 +74,9 @@ params:
 jira:
   # jira_id : "PPBFX-611" # An example
   jira_id : ""
-  site: "http://jira.earlham.ac.uk"
-  username: "tgacpap"
-  password_file: "/ei/cb/common/.jira_pwd"
+  site: "https://earlham-institute.atlassian.net"
+  username: "tgacpap@nbi.ac.uk"
+  password_file: "/ei/cb/common/.jira_token"
 notify_jira: False
 #############################################
 # END of Job and JIRA configurations

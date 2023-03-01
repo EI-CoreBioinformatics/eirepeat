@@ -56,20 +56,39 @@ class JiraInfo:
         else:
             content = comment
 
-        # The payload to submit as a python dictionary
-        payload = {"body": content}
+        # headers for posting comment
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
 
+        # The payload to submit as a python dictionary
         # Convert payload from a python dictionary to json object
-        data = json.dumps(payload)
+        payload = json.dumps(
+            {
+                "body": {
+                    "type": "doc",
+                    "version": 1,
+                    "content": [
+                        {
+                            "type": "paragraph",
+                            "content": [{"text": content, "type": "text"}],
+                        }
+                    ],
+                },
+            }
+        )
 
         # Hardcoded path to JIRA, appended with the ticket id
-        url = JiraInfo.SITE + "/rest/api/latest/issue/" + str(self.jira) + "/comment"
+        url = JiraInfo.SITE + "/rest/api/3/issue/" + str(self.jira) + "/comment"
 
         # Post the payload to jira
-        ret = requests.post(url, data, headers=head, auth=JiraInfo.CREDENTIALS)
+        response = requests.request(
+            "POST", url, data=payload, headers=headers, auth=JiraInfo.CREDENTIALS
+        )
+
+        # Capture JIRA Cloud API response
+        print_jira_api_response(response)
 
         # Check the response indicated a success
-        return ret.ok
+        return response.ok
 
     def post_attachment(self, prefix, file_to_attach, name, suffix=None):
         """
@@ -95,62 +114,101 @@ class JiraInfo:
         filename, ext = os.path.splitext(file_to_attach)
 
         if ext == ".csv":
-            type = "text/csv"
+            filetype = "text/csv"
         elif ext == ".html":
-            type = "text/html"
+            filetype = "text/html"
         elif ext == ".htm":
-            type = "text/html"
+            filetype = "text/html"
         elif ext == ".txt":
-            type = "text/plain"
+            filetype = "text/plain"
         elif ext == ".pdf":
-            type = "application/pdf"
+            filetype = "application/pdf"
         elif ext == ".xls" or ext == ".xlsx":
-            type = "application/vnd.ms-excel"
+            filetype = "application/vnd.ms-excel"
         else:
             raise ValueError("File has an unsupported extension: " + file_to_attach)
 
-        file = {
+        files = {
             "file": (
                 name if name and name != "" else os.path.basename(file_to_attach),
                 open(file_to_attach, "rb"),
-                type,
+                filetype,
             )
         }
 
-        header = {"X-Atlassian-Token": "nocheck"}
+        header = {"Accept": "application/json", "X-Atlassian-Token": "nocheck"}
 
         # Hardcoded path to JIRA, appended with the ticket id
-        url = (
-            JiraInfo.SITE + "/rest/api/latest/issue/" + str(self.jira) + "/attachments"
-        )
+        url = JiraInfo.SITE + "/rest/api/3/issue/" + str(self.jira) + "/attachments"
 
         # Post the payload to jira
-        ret = requests.post(url, headers=header, auth=JiraInfo.CREDENTIALS, files=file)
+        response = requests.request(
+            "POST", url, headers=header, auth=JiraInfo.CREDENTIALS, files=files
+        )
+
+        # Capture JIRA Cloud API response
+        print_jira_api_response(response)
 
         # Check the response indicated a success
-        if ret.ok:
-            content = json.loads(ret.text)
+        if response.ok:
+            content = json.loads(response.text)
+            attached_file_name = content[0]["filename"]
+            attached_file_link = content[0]["content"]
+
+            # add header comment
+            comment_headers = {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+            url = JiraInfo.SITE + "/rest/api/3/issue/" + str(self.jira) + "/comment"
 
             # If that went well, then if we also have a comment add that to the ticket too
-            message = ""
-            if prefix and prefix.strip() != "":
-                message = (
-                    prefix.strip()
-                    + ": ["
-                    + content[0]["filename"]
-                    + "|"
-                    + content[0]["content"]
-                    + "]"
-                )
+            if prefix and prefix.strip() == "":
+                prefix = " "
+            if suffix and suffix.strip() == "":
+                suffix = " "
 
-            if suffix and suffix.strip() != "":
-                message += "\n\n" + suffix
+            payload = json.dumps(
+                {
+                    "body": {
+                        "version": 1,
+                        "type": "doc",
+                        "content": [
+                            {
+                                "type": "paragraph",
+                                "content": [
+                                    {"type": "text", "text": prefix if prefix else " "},
+                                    {
+                                        "type": "text",
+                                        "text": attached_file_name,
+                                        "marks": [
+                                            {
+                                                "type": "link",
+                                                "attrs": {"href": attached_file_link},
+                                            }
+                                        ],
+                                    },
+                                    {"type": "text", "text": suffix if suffix else " "},
+                                ],
+                            }
+                        ],
+                    },
+                }
+            )
 
-            if message != "":
-                return self.post_comment(message)
+            # Post the payload to jira
+            response = requests.request(
+                "POST",
+                url,
+                data=payload,
+                headers=comment_headers,
+                auth=JiraInfo.CREDENTIALS,
+            )
 
-        return ret.ok
+            # Capture JIRA Cloud API response
+            print_jira_api_response(response)
 
+        return response.ok
 
 def post_to_jira(jira_id, comment, jira_config=None):
     """
@@ -186,3 +244,13 @@ def post_attachment_to_jira(
         suffix,
     )
 
+def print_jira_api_response(response):
+    """
+    Returns the JIRA Clould API response directory associated withy the given JIRA ticket
+    :param response: Requests return response
+    """
+    print(
+        json.dumps(
+            json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")
+        )
+    )
