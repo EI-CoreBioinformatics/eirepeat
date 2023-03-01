@@ -2,7 +2,8 @@
     "__default__": {
         "cores": 1,
         "J": "eirepeat.{rule}",
-        "partition": "ei-medium,ei-long"
+        "partition": "ei-long",
+        "exclude": "t256n[5-10,16-19]"
     },
     "clean_genome": {
         "cores": 4,
