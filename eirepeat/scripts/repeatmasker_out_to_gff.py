@@ -40,7 +40,6 @@ class RepeatMakerOutToGFF:
                     if not line or not line[0].isdigit():
                         continue
                     x = line.split()
-                    print(x)
                     start = x[11]
                     end = x[12]
                     if x[8] == "C":
@@ -60,7 +59,7 @@ class RepeatMakerOutToGFF:
                             f'Target "{self.args.tag}:{x[9]}" {start} {end}',
                         ]
                     )
-                    print(xline)
+                    # print(xline)
                     output_gff.write(f"{xline}\n")
 
     def run(self):
