@@ -75,7 +75,7 @@ jira:
   # jira_id : "PPBFX-611" # An example
   jira_id : ""
   site: "https://earlham-institute.atlassian.net"
-  username: "tgacpap@nbi.ac.uk"
+  username: "ei.pap@earlham.ac.uk"
   password_file: "/ei/cb/common/.jira_token"
 notify_jira: False
 #############################################
