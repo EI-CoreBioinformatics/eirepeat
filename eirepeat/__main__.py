@@ -114,7 +114,7 @@ class EIRepeat:
                 f"snakemake --snakefile {script_dir}/Snakefile"
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
                 f" --config notify={self.no_posting} verbose={self.verbose}"
-                " --printshellcmds --reason "
+                " --keep-going --printshellcmds --reason "
             )
             cmd += (
                 f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log --exclude={{cluster.exclude}}'"
