@@ -102,7 +102,11 @@ class EIRepeat:
                 f" --configfile {self.run_config} --latency-wait {self.latency_wait} --jobs {self.jobs} --cluster-config {self.hpc_config}"
                 f" --config notify={self.no_posting} verbose={self.verbose} -np --reason"
             )
-            cmd += " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J} --exclude={cluster.exclude}'" if self.exclude_hosts else " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J}'"
+            cmd += (
+                " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J} --exclude={cluster.exclude}'"
+                if self.exclude_hosts
+                else " --drmaa ' -p {cluster.partition} -c {cluster.cores} --mem={cluster.memory} -J {cluster.J}'"
+            )
             print(cmd)
 
         else:
@@ -112,7 +116,11 @@ class EIRepeat:
                 f" --config notify={self.no_posting} verbose={self.verbose}"
                 " --printshellcmds --reason "
             )
-            cmd += f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log --exclude={{cluster.exclude}}'" if self.exclude_hosts else f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log'"
+            cmd += (
+                f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log --exclude={{cluster.exclude}}'"
+                if self.exclude_hosts
+                else f" --drmaa ' -p {{cluster.partition}} -c {{cluster.cores}} --mem={{cluster.memory}} -J {{cluster.J}} -o {self.logs}/{{rule}}.%N.%j.cluster.log'"
+            )
 
         # for universal_newlines - https://stackoverflow.com/a/4417735
         p = subprocess.Popen(
@@ -257,7 +265,10 @@ def main():
         help="Verbose mode for debugging (default: %(default)s)",
     )
     parser_run.add_argument(
-        "-x", "--exclude_hosts", action="store_true", help="Enable excluding a specific list of hosts specified in the --hpc_config 'exclude' section (default: %(default)s)"
+        "-x",
+        "--exclude_hosts",
+        action="store_true",
+        help="Enable excluding a specific list of hosts specified in the --hpc_config 'exclude' section (default: %(default)s)",
     )
     parser_run.add_argument(
         "-np", "--dry_run", action="store_true", help="Dry run (default: %(default)s)"
