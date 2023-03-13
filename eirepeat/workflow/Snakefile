@@ -712,22 +712,21 @@ rule add_stats_to_jira:
         title = "EI Repeat Analysis",
         eirepeat_stats = os.path.join(output, "eirepeat.stats.txt"),
         storage_details = os.path.join(output, "storage_details.txt"),
-        source_seqkit = config["source"]["seqkit"],
-        source_bedtools = config["source"]["bedtools"]
+        source_seqkit = config["source"]["seqkit"]
     run:
         shell("""cd {params.cwd} && {params.source_seqkit} && {params.time} seqkit fx2tab -n --length {input.fasta} | awk '{{OFS=\"\\t\";print $1,"0",$2}}' > {output.bed}""")
 
         shell("""echo -ne \"\\nEI Repeat Summary Stats:\\n\" > {params.eirepeat_stats}""")
 
         # All repeats
-        shell("""echo -ne \"All repeats (low + interspersed)\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.all_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+        shell("""echo -ne \"All repeats (low + interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.all_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         # All interspersed repeats
-        shell("""echo -ne \"All interspersed repeats (interspersed)\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.all_interspersed_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+        shell("""echo -ne \"All interspersed repeats (interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.all_interspersed_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         if run_red_repeats:
             # RED repeats
-            shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.source_bedtools} && coverageBed -a {output.bed} -b {input.red_repeats_bed} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+            shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.red_repeats_gff} --gff_type match_part | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         shell("""echo -ne \"\\nOutput directory:\\n\" > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details} && echo -ne \"\\n\" >> {params.storage_details}""")
 
@@ -750,5 +749,5 @@ rule add_stats_to_jira:
             out_file.write("\nStorage details")
             for line in in_file2:
                 out_file.write(f'{line}')
-        notify(f"Attaching {params.title} Report", output.txt, jira_filename=f"{Path(output.txt).name}")
+        notify(f"Attaching {params.title} Report: ", output.txt, jira_filename=f"{Path(output.txt).name}")
         notify(output.txt)
