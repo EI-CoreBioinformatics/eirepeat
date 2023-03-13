@@ -659,7 +659,7 @@ rule all_repeats:
         "(set +u"
         + " && cd {params.cwd} "
         + " && cat {input.low_gff} {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_repeats > {output.gff} "
-        + " && cat {input.low_gff3} {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --source all_repeats > {output.gff3} "
+        + " && cat {input.low_gff3} {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --type match --source all_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -683,7 +683,7 @@ rule all_interspersed_repeats:
         "(set +u"
         + " && cd {params.cwd} "
         + " && cat {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_interspersed_repeats > {output.gff} "
-        + " && cat {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --source all_interspersed_repeats > {output.gff3} "
+        + " && cat {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --type match --source all_interspersed_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
