@@ -600,6 +600,7 @@ if config["close_reference"]:
             + " && ln -sf {input.close_reference_hmask} "
             + " && {params.source} "
             + " && {params.time} RepeatMasker {params.extra} -pa {threads} -dir {params.cwd} -lib {params.bname_close_reference_hmask} {params.basename}"
+            + " && if [[ $? -eq 0 && ! -e 'genome.fa.HM.fa.masked' ]]; then cp -L genome.fa.HM.fa genome.fa.HM.fa.masked; fi"
             + " && touch {output.completed}"
             + ") 2> {log}"
 
