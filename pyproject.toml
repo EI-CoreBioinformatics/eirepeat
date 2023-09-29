@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "eirepeat"
+version = "1.3.4"
+description = "eirepeat - EI Repeat Identification pipeline"
+authors = ["Gemy Kaithakottil <gemygk@gmail.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+homepage = "https://github.com/EI-CoreBioinformatics/eirepeat"
+repository = "https://github.com/EI-CoreBioinformatics/eirepeat"
+documentation = "https://github.com/EI-CoreBioinformatics/eirepeat#readme"
+keywords = ["bioinformatics", "repeats", "pipeline", "snakemake", "transposons", "helicase", "eirepeat"]
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+biopython = ">=1.78"
+drmaa = ">=0.7.9"
+pip = ">=23.2.1"
+snakemake = ">=7.32.4"
+bumpversion = ">=0.5.3"
+tabulate = ">=0.9.0"
+PyYAML = ">=6.0.0"
+requests = ">=2.29.0"
+setuptools = ">=67.8.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.4.2"
+
+[tool.poetry.scripts]
+eirepeat = "eirepeat.__main__:main"
+add_directives_GFF3 = "eirepeat.scripts.add_directives_GFF3:main"
+clean_GFF3_source = "eirepeat.scripts.clean_GFF3_source:main"
+compute_coverage = "eirepeat.scripts.compute_coverage:main"
+ncbi_download = "eirepeat.scripts.ncbi_download:main"
+red_rpt_to_GFF3 = "eirepeat.scripts.red_rpt_to_GFF3:main"
+repeatmasker_out_to_gff = "eirepeat.scripts.repeatmasker_out_to_gff:main"
+repeatmasker_to_GFF3 = "eirepeat.scripts.repeatmasker_to_GFF3:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
