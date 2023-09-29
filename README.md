@@ -52,13 +52,19 @@ cd eirepeat
 
 To install, simply use from your current pip environment:
 ```console
-version=1.0.0 && python setup.py bdist_wheel \
+version=1.3.4 && python setup.py bdist_wheel \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
-Also make sure that both PATH and PYTHONPATH environments are updated 
+Or use Python [Poetry](https://python-poetry.org/)
+```console
+version=1.3.4 && poetry build \
+&& pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
+```
+Also, make sure that both PATH and PYTHONPATH environments are updated and DRMAA_LIBRARY_PATH points to the DRMAA installation
 ```console
 export PATH=/path/to/software/eirepeat/${version}/x86_64/bin:$PATH
-export PYTHONPATH=/path/to/software/eirepeat/${version}/x86_64/lib/python3.9/site-packages
+export PYTHONPATH=/path/to/software/eirepeat/${version}/x86_64/lib/python3.11/site-packages
+export DRMAA_LIBRARY_PATH=/path/to/software/slurm-drmaa/1.1.4/x86_64/lib/libdrmaa.so
 ```
 
 ## 4 Running EIRepeat
@@ -96,7 +102,7 @@ optional arguments:
   --close_reference CLOSE_REFERENCE
                         Provide a close reference protein CDS fasta to mask the RepeatModeler fasta. Try to extract just protein coding models and remove any models identified as repeat associated from this file (default: None)
   --organellar_fasta ORGANELLAR_FASTA
-                        Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download.py to download this fasta file from NCBI (default: None)
+                        Provide organellar chloroplast|mitrochondrial nucleotide fasta to mask the RepeatModeler fasta. Use provided script ncbi_download to download this fasta file from NCBI (default: None)
   --jira JIRA           Provide JIRA id for posting job summary. E.g., PPBFX-611 (default: None)
   -o OUTPUT, --output OUTPUT
                         Provide output directory (default: /ei/cb/development/kaithakg/eirepeat/dev/output)
@@ -155,11 +161,11 @@ Great! Created run_config file: '/path/to/run2/run_config.yaml'
 
 ```
 NOTE:  
-You can use the script `ncbi_download.py` to download organellar fasta file from NCBI, please see below a real eample where we download both `mitochondrion` and `chloroplast` fasta for all `eudicotyledons`.
-Please make sure that you have external internet access before executing the `ncbi_download.py` script.
+You can use the script `ncbi_download` to download organellar fasta file from NCBI, please see below a real eample where we download both `mitochondrion` and `chloroplast` fasta for all `eudicotyledons`.
+Please make sure that you have external internet access before executing the `ncbi_download` script.
 
 ```console
-ncbi_download.py \
+ncbi_download \
   -e first.last@domain.xx.xx \
   '"eudicotyledons"[Organism] AND (mitochondrion[filter] OR chloroplast[filter])' \
   eudicotyledons.genetic_compartments.849434.07Dec2021.sequence.fasta
