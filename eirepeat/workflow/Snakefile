@@ -274,7 +274,7 @@ rule red:
         + " && cd .. "
         + " && {params.source} "
         + " && {params.time} Red -gnm genome_directory -sco output_red_sco -cnd output_red_cnd -rpt output_red_rpt -msk output_red_msk -hmo output_red_hmo"
-        + " && {params.time} red_rpt_to_GFF3.py --output_bed {output.bed} --output_gff {output.gff} {output.msk}"
+        + " && {params.time} red_rpt_to_GFF3 --output_bed {output.bed} --output_gff {output.gff} {output.msk}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -327,7 +327,7 @@ rule RepeatMasker_low:
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
         + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_low\\t:' {output.gff}"
-        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
+        + " && {params.time} repeatmasker_to_GFF3 --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -357,7 +357,7 @@ rule RepeatMasker_interspersed:
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -species {params.species} -dir {params.cwd} {input.fasta}"
         + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_interspersed\\t:' {output.gff}"
-        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
+        + " && {params.time} repeatmasker_to_GFF3 --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output}"
         + ") 2> {log}"
 
@@ -634,7 +634,7 @@ rule RepeatMasker_interspersed_repeatmodeler:
         + " && {params.source} "
         + " && {params.time} RepeatMasker {params.extra} -pa {threads} -lib {input.repeatmodeler_fasta} -dir {params.cwd} {input.fasta}"
         + " && {params.time}  sed -i.bkp 's:\\tRepeatMasker\\t:\\tRepeatMasker_interspersed_repeatmodeler\\t:' {output.gff}"
-        + " && {params.time} repeatmasker_to_GFF3.py --tag {params.tag} {output.gff} --output_gff {output.gff3}"
+        + " && {params.time} repeatmasker_to_GFF3 --tag {params.tag} {output.gff} --output_gff {output.gff3}"
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -659,8 +659,8 @@ rule all_repeats:
     shell:
         "(set +u"
         + " && cd {params.cwd} "
-        + " && cat {input.low_gff} {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_repeats > {output.gff} "
-        + " && cat {input.low_gff3} {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --type match --source all_repeats > {output.gff3} "
+        + " && cat {input.low_gff} {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source --source all_repeats > {output.gff} "
+        + " && cat {input.low_gff3} {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3 --type match --source all_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -683,8 +683,8 @@ rule all_interspersed_repeats:
     shell:
         "(set +u"
         + " && cd {params.cwd} "
-        + " && cat {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source.py --source all_interspersed_repeats > {output.gff} "
-        + " && cat {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3.py --type match --source all_interspersed_repeats > {output.gff3} "
+        + " && cat {input.interspersed_repbase_gff} {input.interspersed_rmodeler_gff} | grep -v '^#' | clean_GFF3_source --source all_interspersed_repeats > {output.gff} "
+        + " && cat {input.interspersed_repbase_gff3} {input.interspersed_rmodeler_gff3} | add_directives_GFF3 --type match --source all_interspersed_repeats > {output.gff3} "
         + " && touch {output.completed}"
         + ") 2> {log}"
 
@@ -720,10 +720,10 @@ rule add_stats_to_jira:
         shell("""echo -ne \"\\nEI Repeat Summary Stats:\\n\" > {params.eirepeat_stats}""")
 
         # All repeats
-        shell("""echo -ne \"All repeats (low + interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.all_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+        shell("""echo -ne \"All repeats (low + interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage --bed3_file {output.bed} --gff_file {input.all_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         # All interspersed repeats
-        shell("""echo -ne \"All interspersed repeats (interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.all_interspersed_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+        shell("""echo -ne \"All interspersed repeats (interspersed)\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage --bed3_file {output.bed} --gff_file {input.all_interspersed_repeats_gff} | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         if run_red_repeats:
             # RED repeats
