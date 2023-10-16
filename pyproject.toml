@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eirepeat"
-version = "1.3.4"
+version = "1.4.0"
 description = "eirepeat - EI Repeat Identification pipeline"
 authors = ["Gemy Kaithakottil <gemygk@gmail.com>"]
 license = "GPL-3.0-or-later"
