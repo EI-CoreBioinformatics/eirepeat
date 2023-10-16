@@ -727,7 +727,7 @@ rule add_stats_to_jira:
 
         if run_red_repeats:
             # RED repeats
-            shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage.py --bed3_file {output.bed} --gff_file {input.red_repeats_gff} --gff_type match_part | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
+            shell("""echo -ne \"RED repeats\\n\" >> {params.eirepeat_stats} && {params.time} compute_coverage --bed3_file {output.bed} --gff_file {input.red_repeats_gff} --gff_type match_part | awk '{{bases+=$6;masked+=$5;scaff+=1}} END {{print \"Total Sequences\\t\"scaff\"\\nTotal Bases\\t\"bases\"\\nTotal Masked bases\\t\"masked\"\\nTotal Percentage Bases Masked\\t\"masked/bases*100}}' | tabulate -s \"\\t\" -f tsv  >> {params.eirepeat_stats}  && echo -ne \"\\n\" >> {params.eirepeat_stats}""")
 
         shell("""echo -ne \"\\nOutput directory:\\n\" > {params.storage_details} && {params.du} {params.cwd} >> {params.storage_details} && echo -ne \"\\n\" >> {params.storage_details}""")
 
