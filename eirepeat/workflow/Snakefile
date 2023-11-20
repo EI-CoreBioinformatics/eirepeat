@@ -235,7 +235,7 @@ rule clean_genome:
         cwd = output,
         time = config["params"]["time"],
         source = config["source"]["seqkit"],
-        extra = "-w 60 -u"
+        extra = "-w 60 -u --only-id"
     threads:
             HPC_CONFIG.get_cores("clean_genome")
     shell:
@@ -402,7 +402,7 @@ if config["organellar_fasta"]:
             cwd = output,
             time = config["params"]["time"],
             source = config["source"]["seqkit"],
-            extra = "-w 60 -u"
+            extra = "-w 60 -u --only-id"
         threads:
                 HPC_CONFIG.get_cores("clean_organellar_fasta")
         shell:
@@ -471,7 +471,7 @@ if config["close_reference"]:
             cwd = output,
             time = config["params"]["time"],
             source = config["source"]["seqkit"],
-            extra = "-w 60 -u"
+            extra = "-w 60 -u --only-id"
         threads:
                 HPC_CONFIG.get_cores("clean_close_reference")
         shell:
@@ -715,7 +715,7 @@ rule add_stats_to_jira:
         storage_details = os.path.join(output, "storage_details.txt"),
         source_seqkit = config["source"]["seqkit"]
     run:
-        shell("""cd {params.cwd} && {params.source_seqkit} && {params.time} seqkit fx2tab -n --length {input.fasta} | awk '{{OFS=\"\\t\";print $1,"0",$2}}' > {output.bed}""")
+        shell("""cd {params.cwd} && {params.source_seqkit} && {params.time} seqkit fx2tab --only-id -n --length {input.fasta} | awk '{{OFS=\"\\t\";print $1,"0",$2}}' > {output.bed}""")
 
         shell("""echo -ne \"\\nEI Repeat Summary Stats:\\n\" > {params.eirepeat_stats}""")
 
