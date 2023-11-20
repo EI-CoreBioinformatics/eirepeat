@@ -43,7 +43,9 @@
     },
     "transposonpsi": {
         "cores": 1,
-        "memory": 4096
+        "memory": 4096,
+        "partition": "ei-long",
+        "exclude": "t256n[5-10,16-19],e512n[29-30,53-64]"
     },
     "RepeatMasker_RepeatModeler": {
         "cores": 16,
