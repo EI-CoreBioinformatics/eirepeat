@@ -197,7 +197,7 @@ Here, make sure that the CDS fasta file you provide with --close_reference is on
 What I would do here is that:
 1. Extract only models with `gene_biotype` and `transcript_biotype` marked as `protein_coding`
 2. And if any functional annotation is available then remove any repeat associated models, for example, the `grep` command `grep -v "\(transpos\|helicas\)"` should get you all the models that are repeat associated and then remove them from the fasta.  
-  If you have [SeqKit](https://bioinf.shenwei.me/seqkit/) toolkit available in your PATH, we can do this in one step, for example, `seqkit grep -v -r -p 'transpos|helicas' {input.fasta} -o {output.fasta}`
+  If you have [SeqKit](https://bioinf.shenwei.me/seqkit/) toolkit available in your PATH, we can do this in one step, for example, `seqkit grep -n -v -r -p 'transpos|helicas' {input.fasta} -o {output.fasta}`
 
 
 #### 4. Using just the genome, the organellar fasta and close reference protein coding CDS fasta [RECOMMENDED]
