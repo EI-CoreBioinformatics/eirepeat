@@ -3,7 +3,7 @@ Gemy George Kaithakottil, David Swarbreck
 
 ## 1 Description
 
-EIRepeat is an easy to use pipeline to identify repeats from the genome. 
+EIRepeat is an easy to use pipeline to identify repeats from the genome. It is designed to be run on a High Performance Computing (HPC) cluster. EIRepeat is a wrapper around RepeatModeler and RepeatMasker, and it also includes the option to run RED (Repetitive Element Database) to identify repeats. The pipeline is designed to be run on a High Performance Computing (HPC) cluster.  
 
 EIRepeat utilises below tools to identify repeats:
 1. RepeatModeler v1.0.11 - https://www.repeatmasker.org/RepeatModeler
@@ -36,9 +36,9 @@ RepeatModeler v1.0.11
 RepeatMasker v4.0.7
 RED v22052015 http://toolsmith.ens.utulsa.edu/red/data/DataSet1Src.tar.gz
 SeqKit v2.1.0
-TransposonPSI v08222010
+TransposonPSI v1.0.0
 BLAST v2.6.0
-Bedtools v2.25.0
+Bedtools v2.31.1
 ``` 
 
 ### 3.2 Installing
@@ -52,12 +52,12 @@ cd eirepeat
 
 To install, simply use from your current pip environment:
 ```console
-version=1.3.4 && python setup.py bdist_wheel \
+version=1.4.1 && python setup.py bdist_wheel \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
 Or use Python [Poetry](https://python-poetry.org/)
 ```console
-version=1.3.4 && poetry build \
+version=1.4.1 && poetry build \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
 Also, make sure that both PATH and PYTHONPATH environments are updated and DRMAA_LIBRARY_PATH points to the DRMAA installation
