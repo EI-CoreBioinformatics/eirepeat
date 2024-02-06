@@ -51,7 +51,7 @@ source:
   red: "source red-22052015_CBG"
   transposonpsi: "source transposonPSI-08222010"
   blast: "source blast-2.6.0"
-  bedtools: "source bedtools-2.25.0"
+  bedtools: "source bedtools-2.31.1_CBG"
 
 #####
 # END of source tools and parameters
