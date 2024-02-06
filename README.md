@@ -52,12 +52,12 @@ cd eirepeat
 
 To install, simply use from your current pip environment:
 ```console
-version=1.4.1 && python setup.py bdist_wheel \
+version=1.5.0 && python setup.py bdist_wheel \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
 Or use Python [Poetry](https://python-poetry.org/)
 ```console
-version=1.4.1 && poetry build \
+version=1.5.0 && poetry build \
 && pip install --prefix=/path/to/software/eirepeat/${version}/x86_64 -U dist/*whl
 ```
 Also, make sure that both PATH and PYTHONPATH environments are updated and DRMAA_LIBRARY_PATH points to the DRMAA installation
