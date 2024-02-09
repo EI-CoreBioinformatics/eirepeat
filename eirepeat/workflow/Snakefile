@@ -242,7 +242,7 @@ rule clean_genome:
         "(set +u"
         + " && cd {params.cwd}"
         + " && {params.source} "
-        + " && {params.time} seqkit seq {params.extra} -j {threads} {input} -o {output.fasta}"
+        + " && {params.time} seqkit seq {params.extra} -j {threads} {input} -o - | {params.time} seqkit sort --by-length --reverse --two-pass -o {output.fasta}"
         + " && chmod 777 {output.fasta}"
         + " && touch {output.done}"
         + ") > {log} 2>&1"
