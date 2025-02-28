@@ -1,5 +1,7 @@
 # EIRepeat - EI Repeat Identification Pipeline
-Gemy George Kaithakottil, David Swarbreck
+Gemy George Kaithakottil, David Swarbreck  
+[![DOI](https://zenodo.org/badge/466217220.svg)](https://doi.org/10.5281/zenodo.14938317)
+
 
 ## 1 Description
 
